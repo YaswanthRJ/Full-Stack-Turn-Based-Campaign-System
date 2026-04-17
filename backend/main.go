@@ -5,6 +5,7 @@ import (
 	"backend/handler"
 	"backend/repository"
 	"backend/service"
+	"backend/utils"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,7 +23,7 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
-	//get database url, port number from env
+
 	dsn := os.Getenv("DATABASE_URL")
 	port := os.Getenv("PORT")
 
@@ -30,41 +31,102 @@ func main() {
 		log.Fatal("DATABASE_URL and PORT must be set")
 	}
 
-	//connect to db
 	db, err := database.Connection(dsn)
 	if err != nil {
 		log.Fatalf("could not connect to database: %v", err)
 	}
 	defer db.Close()
+
 	log.Printf("Database connection established")
+
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(25)
 	db.SetConnMaxLifetime(5 * time.Minute)
 
-	//migration
 	if os.Getenv("AUTO_MIGRATE") == "true" {
 		if err := runMigrations(dsn); err != nil {
 			log.Fatal("migration run failed", err)
 		}
 	}
 
-	//repository, service, handler
-	userRepo := repository.NewUserRepo(db)
-	userService := service.NewUserService(userRepo)
+	// repositories, services, handlers
+	userRepo := repository.NewUserRepo()
+	actionRepo := repository.NewActionRepo()
+	creatureRepo := repository.NewCreatureRepo()
+	campaignRepo := repository.NewCampaignRepo()
+
+	userService := service.NewUserService(userRepo, db)
+	actionService := service.NewActionService(db, actionRepo)
+	creatureService := service.NewCreatureService(db, creatureRepo)
+	campaignService := service.NewCampaignService(db, campaignRepo)
+	statsService := service.NewStatsService(userRepo, actionRepo, creatureRepo, campaignRepo, db)
+
 	userHandler := handler.NewUserhandler(userService)
+	actionHandler := handler.NewActionHandler(actionService)
+	creatureHandler := handler.NewCreatureHandler(creatureService)
+	campaignHandler := handler.NewCampaignHandler(campaignService)
+	statsHandler := handler.NewStatshandler(statsService)
 
-	//routes
+	// router
 	mux := http.NewServeMux()
-	mux.HandleFunc("/user", userHandler.CreateUser)
 
-	//start
+	registerGameRoutes(mux, userHandler)
+	registerAdminRoutes(mux, actionHandler, creatureHandler, campaignHandler, statsHandler)
+
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("server listening on %s", addr)
-	if err := http.ListenAndServe(addr, mux); err != nil {
+
+	if err := http.ListenAndServe(addr, corsMiddleware(mux)); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
+}
+
+func registerGameRoutes(mux *http.ServeMux, userHandler *handler.UserHandler) {
+	gameMux := http.NewServeMux()
+
+	gameMux.HandleFunc("/user", userHandler.CreateUser)
+
+	mux.Handle("/game/", http.StripPrefix("/game", utils.GameMiddlewareMux(gameMux)))
+}
+
+func registerAdminRoutes(
+	mux *http.ServeMux,
+	actionHandler *handler.ActionHandler,
+	creatureHandler *handler.CreatureHandler,
+	campaignHandler *handler.CampaignHandler,
+	statsHandler *handler.StatsHandler,
+) {
+	// stats route
+	mux.HandleFunc("GET /stats", statsHandler.GetStats)
+
+	// action routes
+	mux.HandleFunc("POST /actions", actionHandler.CreateAction)
+	mux.HandleFunc("GET /actions", actionHandler.GetAllActions)
+	mux.HandleFunc("GET /actions/{id}", actionHandler.GetActionDetails)
+	mux.HandleFunc("PUT /actions/{id}", actionHandler.UpdateAction)
+	mux.HandleFunc("DELETE /actions/{id}", actionHandler.DeleteAction)
+
+	// creature routes
+	mux.HandleFunc("POST /creatures", creatureHandler.CreateCreatureWithStats)
+	mux.HandleFunc("GET /creatures", creatureHandler.GetAllCreatures)
+	mux.HandleFunc("POST /creatures/{id}/actions", creatureHandler.AssignActionsToCreature)
+	mux.HandleFunc("GET /creatures/{id}", creatureHandler.GetCreaturesDetails)
+	mux.HandleFunc("PUT /creatures/{id}/stats", creatureHandler.UpdateCreatureStats)
+	mux.HandleFunc("DELETE /creatures/{id}", creatureHandler.DeleteCreature)
+
+	// campaign routes
+	mux.HandleFunc("GET /campaigns", campaignHandler.GetAllCampaigns)
+	mux.HandleFunc("POST /campaigns", campaignHandler.CreateCampaignTemplate)
+	mux.HandleFunc("GET /campaigns/{id}", campaignHandler.GetCampaign)
+	mux.HandleFunc("DELETE /campaigns/{id}", campaignHandler.DeleteCampaign)
+
+	mux.HandleFunc("POST /campaigns/{id}/creatures", campaignHandler.AddCreaturesToCampaign)
+	mux.HandleFunc("POST /campaigns/{id}/stages", campaignHandler.AddStagesToCampaign)
+	mux.HandleFunc("PUT /campaigns/{id}/stages/{stageIndex}", campaignHandler.UpdateStageCreature)
+	mux.HandleFunc("DELETE /campaigns/{id}/stages/{stageIndex}", campaignHandler.DeleteStage)
 
 }
+
 func runMigrations(dsn string) error {
 	m, err := migrate.New("file://migrations", dsn)
 	if err != nil {
@@ -78,4 +140,19 @@ func runMigrations(dsn string) error {
 
 	log.Println("migrations applied")
 	return nil
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

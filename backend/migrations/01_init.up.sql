@@ -24,10 +24,11 @@ CREATE TABLE creatures (
 );
 
 CREATE TABLE creature_stats (
-    creature_id TEXT PRIMARY KEY REFERENCES creatures(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY,
+    creature_id TEXT UNIQUE NOT NULL REFERENCES creatures(id) ON DELETE CASCADE,
     max_hp INTEGER NOT NULL,
     attack INTEGER NOT NULL,
-    defense INTEGER NOT NULL,
+    defence INTEGER NOT NULL,
     action_point INTEGER NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -37,6 +38,26 @@ CREATE TABLE creature_actions (
     action_id TEXT REFERENCES actions(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (creature_id, action_id)
+);
+
+CREATE TABLE campaign_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'inactive'
+);
+
+CREATE TABLE campaign_playable_creatures (
+    campaign_template_id TEXT REFERENCES campaign_templates(id) ON DELETE CASCADE,
+    creature_id TEXT REFERENCES creatures(id) ON DELETE CASCADE,
+    PRIMARY KEY (campaign_template_id, creature_id)
+);
+
+CREATE TABLE campaign_stages (
+    campaign_template_id TEXT REFERENCES campaign_templates(id) ON DELETE CASCADE,
+    stage_index INTEGER NOT NULL,
+    enemy_creature_id TEXT REFERENCES creatures(id) ON DELETE CASCADE,
+    PRIMARY KEY (campaign_template_id, stage_index)
 );
 
 CREATE INDEX idx_creatures_is_playable ON creatures(is_playable);

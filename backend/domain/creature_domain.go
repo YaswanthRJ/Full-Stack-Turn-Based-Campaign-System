@@ -3,21 +3,34 @@ package domain
 import "github.com/google/uuid"
 
 type Creature struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsPlayable  bool   `json:"isPlayable"`
+	ID          string
+	Name        string
+	Description string
+	IsPlayable  bool
 }
 type CreatureStats struct {
-	CreatureID  string `json:"creatureId"`
-	MaxHP       int    `json:"maxHp"`
-	Attack      int    `json:"attack"`
-	Defense     int    `json:"defense"`
-	ActionPoint int    `json:"actionPoint"`
+	ID          string
+	CreatureID  string
+	MaxHP       int
+	Attack      int
+	Defence     int
+	ActionPoint int
 }
 
-func NewCreature(name string, description string, isPlayable bool) *Creature {
-	return &Creature{
+type CreatureDetails struct {
+	ID          string
+	Name        string
+	Description string
+	IsPlayable  bool
+
+	MaxHP       int
+	Attack      int
+	Defence     int
+	ActionPoint int
+}
+
+func NewCreature(name string, description string, isPlayable bool) Creature {
+	return Creature{
 		ID:          uuid.New().String(),
 		Name:        name,
 		Description: description,
@@ -25,12 +38,13 @@ func NewCreature(name string, description string, isPlayable bool) *Creature {
 	}
 }
 
-func NewCreatureStats(creatureID string, maxHP, attack, defense, actionPoint int) *CreatureStats {
-	return &CreatureStats{
+func NewCreatureStats(creatureID string, maxHP, attack, defence, actionPoint int) CreatureStats {
+	return CreatureStats{
+		ID:          uuid.New().String(),
 		CreatureID:  creatureID,
 		MaxHP:       maxHP,
 		Attack:      attack,
-		Defense:     defense,
+		Defence:     defence,
 		ActionPoint: actionPoint,
 	}
 }
