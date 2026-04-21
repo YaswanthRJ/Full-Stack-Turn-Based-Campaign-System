@@ -304,6 +304,7 @@ func (s *campaignService) ResolveRound(ctx context.Context, userID string, fight
 	if err != nil {
 		return nil, fmt.Errorf("get enemy action details: %w", err)
 	}
+	fmt.Printf(enemyActionId)
 	// CALCULATE DAMAGE FOR BOTH
 	// check if they hit
 
