@@ -3,6 +3,7 @@ package repository
 import (
 	"backend/domain"
 	"context"
+	"database/sql"
 	"fmt"
 )
 
@@ -15,6 +16,9 @@ type CreatureRepository interface {
 	UpdateCreatureStats(ctx context.Context, db DBTX, stats domain.CreatureStats) error
 	DeleteCreature(ctx context.Context, db DBTX, creatureID string) error
 	Count(ctx context.Context, db DBTX) (int, error)
+	GetStats(ctx context.Context, db DBTX, creatureID string) (domain.CreatureStats, error)
+	ValidateAction(ctx context.Context, db DBTX, creatureID string, actionID string) (bool, error)
+	GetActions(ctx context.Context, db DBTX, creatureID string) ([]domain.Action, error)
 }
 
 type creatureRepo struct {
@@ -167,4 +171,71 @@ func (r *creatureRepo) Count(ctx context.Context, db DBTX) (int, error) {
 		return 0, fmt.Errorf("creatureRepo.Count: %w", err)
 	}
 	return count, nil
+}
+
+func (r *creatureRepo) GetStats(ctx context.Context, db DBTX, creatureID string) (domain.CreatureStats, error) {
+	var stats domain.CreatureStats
+	err := db.QueryRowContext(ctx,
+		`SELECT max_hp, attack, defence, action_point 
+         FROM creature_stats 
+         WHERE creature_id = $1`,
+		creatureID,
+	).Scan(&stats.MaxHP, &stats.Attack, &stats.Defence, &stats.ActionPoint)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return domain.CreatureStats{}, fmt.Errorf("creature stats not found for id %s", creatureID)
+		}
+		return domain.CreatureStats{}, fmt.Errorf("getStats: %w", err)
+	}
+	return stats, nil
+}
+
+func (r *creatureRepo) ValidateAction(ctx context.Context, db DBTX, creatureID string, actionID string) (bool, error) {
+	var exists bool
+
+	err := db.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM creature_actions  WHERE creature_id = $1 AND action_id = $2)`, creatureID, actionID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("creatureRepo.ValidateAction: %w", err)
+	}
+	return exists, nil
+}
+func (r *creatureRepo) GetActions(ctx context.Context, db DBTX, creatureID string) ([]domain.Action, error) {
+	query := `
+		SELECT a.id, a.name, a.type, a.accuracy, a.multiplier, a.action_weight
+		FROM actions a
+		JOIN creature_actions ca ON ca.action_id = a.id
+		WHERE ca.creature_id = $1
+	`
+
+	rows, err := db.QueryContext(ctx, query, creatureID)
+	if err != nil {
+		return nil, fmt.Errorf("get actions query: %w", err)
+	}
+	defer rows.Close()
+
+	var actions []domain.Action
+
+	for rows.Next() {
+		var a domain.Action
+
+		if err := rows.Scan(
+			&a.ID,
+			&a.Name,
+			&a.Type,
+			&a.Accuracy,
+			&a.Multiplier,
+			&a.ActionWeight,
+		); err != nil {
+			return nil, fmt.Errorf("get actions scan: %w", err)
+		}
+
+		actions = append(actions, a)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("get actions rows: %w", err)
+	}
+
+	return actions, nil
 }

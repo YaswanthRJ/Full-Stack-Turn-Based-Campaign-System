@@ -15,6 +15,7 @@ type CreatureStats struct {
 	Attack      int
 	Defence     int
 	ActionPoint int
+	Speed       int
 }
 
 type CreatureDetails struct {
@@ -27,6 +28,7 @@ type CreatureDetails struct {
 	Attack      int
 	Defence     int
 	ActionPoint int
+	Speed       int
 }
 
 func NewCreature(name string, description string, isPlayable bool) Creature {
@@ -38,7 +40,7 @@ func NewCreature(name string, description string, isPlayable bool) Creature {
 	}
 }
 
-func NewCreatureStats(creatureID string, maxHP, attack, defence, actionPoint int) CreatureStats {
+func NewCreatureStats(creatureID string, maxHP, attack, defence, actionPoint int, speed int) CreatureStats {
 	return CreatureStats{
 		ID:          uuid.New().String(),
 		CreatureID:  creatureID,
@@ -46,5 +48,6 @@ func NewCreatureStats(creatureID string, maxHP, attack, defence, actionPoint int
 		Attack:      attack,
 		Defence:     defence,
 		ActionPoint: actionPoint,
+		Speed:       speed,
 	}
 }

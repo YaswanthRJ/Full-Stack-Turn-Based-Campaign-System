@@ -8,6 +8,7 @@ type CreateCreatureInput struct {
 	Attack      int
 	Defence     int
 	ActionPoint int
+	Speed       int
 }
 
 type UpdateCreatureStatInput struct {
@@ -15,4 +16,5 @@ type UpdateCreatureStatInput struct {
 	Attack      int
 	Defence     int
 	ActionPoint int
+	Speed       int
 }

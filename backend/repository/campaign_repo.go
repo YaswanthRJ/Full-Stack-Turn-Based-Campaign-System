@@ -3,6 +3,7 @@ package repository
 import (
 	"backend/domain"
 	"context"
+	"database/sql"
 	"fmt"
 )
 
@@ -16,6 +17,15 @@ type CampaignRepository interface {
 	DeleteStage(ctx context.Context, db DBTX, campaignId string, stageIndex int) error
 	DeleteCampaign(ctx context.Context, db DBTX, campaignId string) error
 	Count(ctx context.Context, db DBTX) (int, error)
+	ValidateId(ctx context.Context, db DBTX, campaignID string) error
+	ValidateCreature(ctx context.Context, db DBTX, campaignID string, creatureID string) error
+	NewCampaignSession(ctx context.Context, db DBTX, session *domain.CampaignSession) error
+	GetFirstEnemy(ctx context.Context, db DBTX, campaignID string) (string, error)
+	GetEnemy(ctx context.Context, db DBTX, campaignID string, stageNO int) (string, error)
+	NewFight(ctx context.Context, db DBTX, fight *domain.Fight) error
+	GetActiveFight(ctx context.Context, db DBTX, sessionID string) (*domain.Fight, error)
+	GetFight(ctx context.Context, db DBTX, fightID string) (*domain.Fight, error)
+	GetSession(ctx context.Context, db DBTX, sessionID string) (*domain.CampaignSession, error)
 }
 
 type campaignRepo struct {
@@ -262,4 +272,246 @@ func (r *campaignRepo) Count(ctx context.Context, db DBTX) (int, error) {
 		return 0, fmt.Errorf("campaignRepo.Count: %w", err)
 	}
 	return count, nil
+}
+
+func (r *campaignRepo) ValidateId(ctx context.Context, db DBTX, campaignID string) error {
+	var exists bool
+
+	err := db.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM campaign_templates  WHERE id = $1)`, campaignID).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("campaignRepo.validateId: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("campaign not found or not published: %s", campaignID)
+	}
+	return nil
+}
+
+// validateCreature checks if creature is playable in this campaign
+func (r *campaignRepo) ValidateCreature(ctx context.Context, db DBTX, campaignID string, creatureID string) error {
+	var exists bool
+	err := db.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM campaign_playable_creatures WHERE campaign_template_id = $1 AND creature_id = $2)`,
+		campaignID, creatureID,
+	).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("campaignRepo.validateCreature: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("creature %s not available for campaign %s", creatureID, campaignID)
+	}
+	return nil
+}
+
+func (r *campaignRepo) GetEnemy(ctx context.Context, db DBTX, campaignID string, stageNO int) (string, error) {
+	var creatureID string
+
+	err := db.QueryRowContext(ctx, `SELECT enemy_creature_id FROM campaign_stages WHERE campaign_template_id = $1 AND stage_index = $2`, campaignID, stageNO).Scan(&creatureID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("no enemy found for campaign %s at stage %d", campaignID, stageNO)
+		}
+		return "", fmt.Errorf("campaignRepo.getEnemy: %w", err)
+	}
+
+	return creatureID, nil
+}
+
+func (r *campaignRepo) GetFirstEnemy(ctx context.Context, db DBTX, campaignID string) (string, error) {
+	return r.GetEnemy(ctx, db, campaignID, 0)
+}
+
+func (r *campaignRepo) NewCampaignSession(ctx context.Context, db DBTX, session *domain.CampaignSession) error {
+	query := `
+        INSERT INTO campaign_sessions (
+            id, user_id, campaign_template_id, current_stage_index,
+            player_creature_id, max_hp, current_hp, 
+            max_action_point, current_action_point,
+            status, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+
+	_, err := db.ExecContext(ctx, query,
+		session.ID,
+		session.UserID,
+		session.CampaignTemplateID,
+		session.CurrentStageIndex,
+		session.PlayerCreatureID,
+		session.MaxHP,
+		session.CurrentHP,
+		session.MaxActionPoint,
+		session.CurrentActionPoint,
+		session.Status,
+		session.CreatedAt,
+		session.UpdatedAt,
+	)
+
+	if err != nil {
+		return fmt.Errorf("campaignRepo.NewCampaignSession: %w", err)
+	}
+
+	return nil
+}
+
+func (r *campaignRepo) NewFight(ctx context.Context, db DBTX, fight *domain.Fight) error {
+	query := `
+        INSERT INTO fights (
+            id, campaign_session_id, user_id,
+            player_current_hp, player_max_hp,
+            player_current_action_point, player_max_action_point,
+            enemy_creature_id, enemy_current_hp, enemy_max_hp,
+            enemy_current_action_point, enemy_max_action_point,
+            round_number, status, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+    `
+
+	_, err := db.ExecContext(ctx, query,
+		fight.ID,
+		fight.CampaignSessionID,
+		fight.UserID,
+		fight.PlayerCurrentHP,
+		fight.PlayerMaxHP,
+		fight.PlayerCurrentActionPoint,
+		fight.PlayerMaxActionPoint,
+		fight.EnemyCreatureID,
+		fight.EnemyCurrentHP,
+		fight.EnemyMaxHP,
+		fight.EnemyCurrentActionPoint,
+		fight.EnemyMaxActionPoint,
+		fight.RoundNumber,
+		fight.Status,
+		fight.CreatedAt,
+		fight.UpdatedAt,
+	)
+
+	if err != nil {
+		return fmt.Errorf("campaignRepo.NewFight: %w", err)
+	}
+
+	return nil
+}
+
+func (r *campaignRepo) GetFight(ctx context.Context, db DBTX, fightID string) (*domain.Fight, error) {
+	var fight domain.Fight
+
+	query := `
+        SELECT id, campaign_session_id, user_id,
+               player_current_hp, player_max_hp,
+               player_current_action_point, player_max_action_point,
+               enemy_creature_id, enemy_current_hp, enemy_max_hp,
+               enemy_current_action_point, enemy_max_action_point,
+               round_number, status, created_at, updated_at
+        FROM fights
+        WHERE id = $1
+    `
+
+	err := db.QueryRowContext(ctx, query, fightID).Scan(
+		&fight.ID,
+		&fight.CampaignSessionID,
+		&fight.UserID,
+		&fight.PlayerCurrentHP,
+		&fight.PlayerMaxHP,
+		&fight.PlayerCurrentActionPoint,
+		&fight.PlayerMaxActionPoint,
+		&fight.EnemyCreatureID,
+		&fight.EnemyCurrentHP,
+		&fight.EnemyMaxHP,
+		&fight.EnemyCurrentActionPoint,
+		&fight.EnemyMaxActionPoint,
+		&fight.RoundNumber,
+		&fight.Status,
+		&fight.CreatedAt,
+		&fight.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("fight not found: %s", fightID)
+		}
+		return nil, fmt.Errorf("campaignRepo.GetFight: %w", err)
+	}
+
+	return &fight, nil
+}
+
+func (r *campaignRepo) GetActiveFight(ctx context.Context, db DBTX, sessionID string) (*domain.Fight, error) {
+	var fight domain.Fight
+
+	query := `
+        SELECT id, campaign_session_id, user_id,
+               player_current_hp, player_max_hp,
+               player_current_action_point, player_max_action_point,
+               enemy_creature_id, enemy_current_hp, enemy_max_hp,
+               enemy_current_action_point, enemy_max_action_point,
+               round_number, status, created_at, updated_at
+        FROM fights
+        WHERE campaign_session_id = $1 AND status = 'active'
+        ORDER BY created_at DESC
+        LIMIT 1
+    `
+
+	err := db.QueryRowContext(ctx, query, sessionID).Scan(
+		&fight.ID,
+		&fight.CampaignSessionID,
+		&fight.UserID,
+		&fight.PlayerCurrentHP,
+		&fight.PlayerMaxHP,
+		&fight.PlayerCurrentActionPoint,
+		&fight.PlayerMaxActionPoint,
+		&fight.EnemyCreatureID,
+		&fight.EnemyCurrentHP,
+		&fight.EnemyMaxHP,
+		&fight.EnemyCurrentActionPoint,
+		&fight.EnemyMaxActionPoint,
+		&fight.RoundNumber,
+		&fight.Status,
+		&fight.CreatedAt,
+		&fight.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("campaignRepo.GetActiveFight: %w", err)
+	}
+
+	return &fight, nil
+}
+
+func (r *campaignRepo) GetSession(ctx context.Context, db DBTX, sessionID string) (*domain.CampaignSession, error) {
+	var session domain.CampaignSession
+
+	query := `
+        SELECT id, user_id, campaign_template_id, current_stage_index,
+               player_creature_id, max_hp, current_hp, 
+               max_action_point, current_action_point,
+               status, created_at, updated_at
+        FROM campaign_sessions
+        WHERE id = $1
+    `
+
+	err := db.QueryRowContext(ctx, query, sessionID).Scan(
+		&session.ID,
+		&session.UserID,
+		&session.CampaignTemplateID,
+		&session.CurrentStageIndex,
+		&session.PlayerCreatureID,
+		&session.MaxHP,
+		&session.CurrentHP,
+		&session.MaxActionPoint,
+		&session.CurrentActionPoint,
+		&session.Status,
+		&session.CreatedAt,
+		&session.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("session not found: %s", sessionID)
+		}
+		return nil, fmt.Errorf("campaignRepo.GetSession: %w", err)
+	}
+
+	return &session, nil
 }

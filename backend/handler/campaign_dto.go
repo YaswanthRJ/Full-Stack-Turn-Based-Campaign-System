@@ -21,3 +21,7 @@ type CampaignStageRequest struct {
 type updateStageRequest struct {
 	EnemyCreatureID string `json:"enemyCreatureId"`
 }
+
+type StartCampaignRequest struct {
+	EnemyCreatureID string `json:"enemyCreatureId"`
+}

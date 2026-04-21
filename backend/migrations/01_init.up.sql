@@ -30,6 +30,7 @@ CREATE TABLE creature_stats (
     attack INTEGER NOT NULL,
     defence INTEGER NOT NULL,
     action_point INTEGER NOT NULL,
+    speed INTEGER NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

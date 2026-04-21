@@ -1,0 +1,136 @@
+package service
+
+import (
+	"fmt"
+	"math"
+	"math/rand"
+	"sort"
+	"time"
+)
+
+type EngineService interface {
+	ResolveEnemyAction(input EnemyActionInput) (string, error)
+	EstimateDamage(input EstimateDamageInput) (int, error)
+	EstimateFinalDamage(input EstimateFinalDamageInput) (int, error)
+	RollAccuracy(input AccuracyInput) (bool, error)
+}
+
+type engineService struct {
+	rng *rand.Rand
+}
+
+func NewEngineService() EngineService {
+	return &engineService{
+		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
+	}
+}
+
+// ResolveEnemyAction selects the best enemy action based on combat state.
+func (s *engineService) ResolveEnemyAction(input EnemyActionInput) (string, error) {
+	if input.EnemyMaxHP <= 0 || input.PlayerMaxHP <= 0 {
+		return "", fmt.Errorf("invalid HP values")
+	}
+
+	if input.EnemyMaxAP <= 0 || input.PlayerMaxAP <= 0 {
+		return "", fmt.Errorf("invalid AP values")
+	}
+
+	valid := filterValidActions(input.AvailableActions, input.EnemyCurrentAP)
+
+	if len(valid) == 0 {
+		return "", fmt.Errorf("no valid actions")
+	}
+
+	scored := scoreActions(valid, input)
+
+	if len(scored) == 0 {
+		return "", fmt.Errorf("no scorable actions")
+	}
+
+	// Shuffle first so tied scores don't always pick same action
+	s.rng.Shuffle(len(scored), func(i, j int) {
+		scored[i], scored[j] = scored[j], scored[i]
+	})
+
+	sort.SliceStable(scored, func(i, j int) bool {
+		return scored[i].Score > scored[j].Score
+	})
+
+	chosen := pickWithRandomness(scored, s.rng)
+
+	return chosen.Action.ID, nil
+}
+
+// EstimateDamage returns raw pre-mitigation damage.
+func (s *engineService) EstimateDamage(input EstimateDamageInput) (int, error) {
+	if input.SourceAttack < 0 {
+		return 0, fmt.Errorf("invalid source attack")
+	}
+
+	if input.ActionMultiplier < 0 {
+		return 0, fmt.Errorf("invalid multiplier")
+	}
+
+	damage := float64(input.SourceAttack) * input.ActionMultiplier
+
+	if damage < 1 {
+		damage = 1
+	}
+
+	return int(math.Round(damage)), nil
+}
+
+// EstimateFinalDamage resolves final damage after block + defence
+func (s *engineService) EstimateFinalDamage(input EstimateFinalDamageInput) (int, error) {
+	if input.RawAttack < 0 {
+		return 0, fmt.Errorf("invalid raw attack")
+	}
+
+	if input.CreatureDefense < 0 {
+		return 0, fmt.Errorf("invalid creature defense")
+	}
+
+	if input.DefenceMultiplier < 0 {
+		return 0, fmt.Errorf("invalid defence multiplier")
+	}
+
+	block := input.DefenceMultiplier
+	if block > 1 {
+		block = 1
+	}
+
+	raw := float64(input.RawAttack)
+
+	// Step 1: active block %
+	remaining := raw * (1 - block)
+
+	// Full block
+	if remaining <= 0 {
+		return 0, nil
+	}
+
+	// Step 2: natural defense reduction
+	def := float64(input.CreatureDefense)
+
+	damage := remaining * (remaining / (remaining + def))
+
+	if damage < 1 {
+		damage = 1
+	}
+
+	return int(math.Round(damage)), nil
+}
+
+// RollAccuracy returns true if attack lands.
+func (s *engineService) RollAccuracy(input AccuracyInput) (bool, error) {
+	if input.Accuracy < 0 {
+		return false, fmt.Errorf("invalid accuracy")
+	}
+
+	acc := input.Accuracy
+	if acc > 1 {
+		acc = 1
+	}
+
+	return s.rng.Float64() <= acc, nil
+}

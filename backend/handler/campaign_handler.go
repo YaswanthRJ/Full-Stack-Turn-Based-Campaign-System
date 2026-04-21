@@ -4,6 +4,7 @@ import (
 	"backend/service"
 	"backend/utils"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -235,5 +236,48 @@ func (h *CampaignHandler) DeleteCampaign(w http.ResponseWriter, r *http.Request)
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{
 		"message": "campaign deleted successfully",
+	})
+}
+
+func (h *CampaignHandler) StartCampaign(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	campaignID := r.PathValue("id")
+	if campaignID == "" {
+		http.Error(w, "missing campaign id", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	userID, ok := utils.GetUserID(ctx)
+	if !ok {
+		http.Error(w, "missing user id", http.StatusUnauthorized)
+		return
+	}
+	var req StartCampaignRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.EnemyCreatureID == "" {
+		http.Error(w, "missing creature id", http.StatusBadRequest)
+		return
+	}
+
+	fight, err := h.service.StartCampaign(ctx, userID, req.EnemyCreatureID, campaignID)
+	if err != nil {
+		log.Printf("StartCampaign failed: %v", err)
+		http.Error(w, "campaign creation failed", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, map[string]interface{}{
+		"message":    "campaign started successfully",
+		"session_id": fight.CampaignSessionID,
+		"fight":      fight,
 	})
 }

@@ -70,7 +70,7 @@ func main() {
 	// router
 	mux := http.NewServeMux()
 
-	registerGameRoutes(mux, userHandler)
+	registerGameRoutes(mux, userHandler, campaignHandler)
 	registerAdminRoutes(mux, actionHandler, creatureHandler, campaignHandler, statsHandler)
 
 	addr := fmt.Sprintf(":%s", port)
@@ -81,12 +81,16 @@ func main() {
 	}
 }
 
-func registerGameRoutes(mux *http.ServeMux, userHandler *handler.UserHandler) {
+func registerGameRoutes(mux *http.ServeMux, userHandler *handler.UserHandler, campaignHandler *handler.CampaignHandler) {
 	gameMux := http.NewServeMux()
 
 	gameMux.HandleFunc("/user", userHandler.CreateUser)
 
+	// campaign routes
+	gameMux.HandleFunc("POST /campaign/{id}/start", campaignHandler.StartCampaign)
+
 	mux.Handle("/game/", http.StripPrefix("/game", utils.GameMiddlewareMux(gameMux)))
+
 }
 
 func registerAdminRoutes(

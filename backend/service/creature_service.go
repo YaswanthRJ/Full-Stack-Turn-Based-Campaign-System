@@ -16,6 +16,9 @@ type CreatureService interface {
 	GetCreatureDetails(ctx context.Context, creatureID string) (domain.CreatureDetails, error)
 	UpdateCreatureStats(ctx context.Context, creatureID string, input UpdateCreatureStatInput) error
 	DeleteCreature(ctx context.Context, creatureID string) error
+	GetStats(ctx context.Context, creatureID string) (domain.CreatureStats, error)
+	ValidateAction(ctx context.Context, creatureID string, actionID string) (bool, error)
+	GetActions(ctx context.Context, creatureID string) ([]domain.Action, error)
 }
 
 type creatureService struct {
@@ -32,13 +35,17 @@ func (s *creatureService) CreateCreatureWithStats(ctx context.Context, creature 
 	if err != nil {
 		return err
 	}
+
+	committed := false
+
 	defer func() {
-		if err != nil {
+		if !committed {
 			_ = tx.Rollback()
 		}
 	}()
+
 	newcreature := domain.NewCreature(creature.Name, creature.Description, creature.IsPlayable)
-	newCreatureStats := domain.NewCreatureStats(newcreature.ID, creature.MaxHP, creature.Attack, creature.Defence, creature.ActionPoint)
+	newCreatureStats := domain.NewCreatureStats(newcreature.ID, creature.MaxHP, creature.Attack, creature.Defence, creature.ActionPoint, creature.Speed)
 	if err = s.repo.Create(ctx, tx, newcreature); err != nil {
 		return fmt.Errorf("create creature: %w", err)
 	}
@@ -105,4 +112,35 @@ func (s *creatureService) DeleteCreature(ctx context.Context, creatureID string)
 	}
 
 	return nil
+}
+
+func (s *creatureService) GetStats(ctx context.Context, creatureID string) (domain.CreatureStats, error) {
+	if creatureID == "" {
+		return domain.CreatureStats{}, fmt.Errorf("invalid creature id")
+	}
+	stats, err := s.repo.GetStats(ctx, s.db, creatureID)
+	if err != nil {
+		return domain.CreatureStats{}, fmt.Errorf("GetStats: %w", err)
+	}
+	return stats, nil
+}
+
+func (s *creatureService) ValidateAction(ctx context.Context, creatureID string, actionID string) (bool, error) {
+	exists, err := s.repo.ValidateAction(ctx, s.db, creatureID, actionID)
+	if err != nil {
+		return false, fmt.Errorf("creatureService.ValidateAction: %w", err)
+	}
+	return exists, nil
+}
+func (s *creatureService) GetActions(ctx context.Context, creatureID string) ([]domain.Action, error) {
+	if creatureID == "" {
+		return nil, fmt.Errorf("invalid creature id")
+	}
+
+	actions, err := s.repo.GetActions(ctx, s.db, creatureID)
+	if err != nil {
+		return nil, fmt.Errorf("get actions: %w", err)
+	}
+
+	return actions, nil
 }
