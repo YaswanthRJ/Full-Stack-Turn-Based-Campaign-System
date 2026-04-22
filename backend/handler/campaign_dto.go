@@ -25,3 +25,7 @@ type updateStageRequest struct {
 type StartCampaignRequest struct {
 	EnemyCreatureID string `json:"enemyCreatureId"`
 }
+
+type ResolveRoundRequest struct {
+	ActionID string `json:"actionId"`
+}

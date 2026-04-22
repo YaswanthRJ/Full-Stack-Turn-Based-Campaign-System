@@ -58,7 +58,8 @@ func main() {
 	userService := service.NewUserService(userRepo, db)
 	actionService := service.NewActionService(db, actionRepo)
 	creatureService := service.NewCreatureService(db, creatureRepo)
-	campaignService := service.NewCampaignService(db, campaignRepo)
+	engineService := service.NewEngineService()
+	campaignService := service.NewCampaignService(db, campaignRepo, creatureService, actionService, engineService)
 	statsService := service.NewStatsService(userRepo, actionRepo, creatureRepo, campaignRepo, db)
 
 	userHandler := handler.NewUserhandler(userService)
@@ -84,13 +85,16 @@ func main() {
 func registerGameRoutes(mux *http.ServeMux, userHandler *handler.UserHandler, campaignHandler *handler.CampaignHandler) {
 	gameMux := http.NewServeMux()
 
+	registerSharedCampaignRoutes(gameMux, campaignHandler)
+
 	gameMux.HandleFunc("/user", userHandler.CreateUser)
 
-	// campaign routes
+	gameMux.HandleFunc("GET /campaign/session", campaignHandler.GetActiveUserSession)
 	gameMux.HandleFunc("POST /campaign/{id}/start", campaignHandler.StartCampaign)
+	gameMux.HandleFunc("POST /campaign/fight/{fightId}/round", campaignHandler.ResolveRound)
+	gameMux.HandleFunc("POST /campaign/session/{sessionId}/next", campaignHandler.StartNextFight)
 
 	mux.Handle("/game/", http.StripPrefix("/game", utils.GameMiddlewareMux(gameMux)))
-
 }
 
 func registerAdminRoutes(
@@ -100,6 +104,8 @@ func registerAdminRoutes(
 	campaignHandler *handler.CampaignHandler,
 	statsHandler *handler.StatsHandler,
 ) {
+	registerSharedCampaignRoutes(mux, campaignHandler)
+
 	// stats route
 	mux.HandleFunc("GET /stats", statsHandler.GetStats)
 
@@ -119,9 +125,7 @@ func registerAdminRoutes(
 	mux.HandleFunc("DELETE /creatures/{id}", creatureHandler.DeleteCreature)
 
 	// campaign routes
-	mux.HandleFunc("GET /campaigns", campaignHandler.GetAllCampaigns)
 	mux.HandleFunc("POST /campaigns", campaignHandler.CreateCampaignTemplate)
-	mux.HandleFunc("GET /campaigns/{id}", campaignHandler.GetCampaign)
 	mux.HandleFunc("DELETE /campaigns/{id}", campaignHandler.DeleteCampaign)
 
 	mux.HandleFunc("POST /campaigns/{id}/creatures", campaignHandler.AddCreaturesToCampaign)
@@ -129,6 +133,11 @@ func registerAdminRoutes(
 	mux.HandleFunc("PUT /campaigns/{id}/stages/{stageIndex}", campaignHandler.UpdateStageCreature)
 	mux.HandleFunc("DELETE /campaigns/{id}/stages/{stageIndex}", campaignHandler.DeleteStage)
 
+}
+
+func registerSharedCampaignRoutes(mux *http.ServeMux, campaignHandler *handler.CampaignHandler) {
+	mux.HandleFunc("GET /campaigns", campaignHandler.GetAllCampaigns)
+	mux.HandleFunc("GET /campaigns/{id}", campaignHandler.GetCampaign)
 }
 
 func runMigrations(dsn string) error {

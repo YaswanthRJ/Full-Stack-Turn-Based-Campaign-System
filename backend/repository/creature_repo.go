@@ -38,8 +38,8 @@ func (r *creatureRepo) Create(ctx context.Context, db DBTX, creature domain.Crea
 
 func (r *creatureRepo) CreateStats(ctx context.Context, db DBTX, stats domain.CreatureStats) error {
 	_, err := db.ExecContext(ctx,
-		"INSERT INTO creature_stats (id,creature_id,max_hp,attack,defence,action_point) VALUES ($1,$2,$3,$4,$5,$6)",
-		stats.ID, stats.CreatureID, stats.MaxHP, stats.Attack, stats.Defence, stats.ActionPoint,
+		"INSERT INTO creature_stats (id,creature_id,max_hp,attack,defence,action_point,speed) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+		stats.ID, stats.CreatureID, stats.MaxHP, stats.Attack, stats.Defence, stats.ActionPoint, stats.Speed,
 	)
 	return err
 }
@@ -176,11 +176,11 @@ func (r *creatureRepo) Count(ctx context.Context, db DBTX) (int, error) {
 func (r *creatureRepo) GetStats(ctx context.Context, db DBTX, creatureID string) (domain.CreatureStats, error) {
 	var stats domain.CreatureStats
 	err := db.QueryRowContext(ctx,
-		`SELECT max_hp, attack, defence, action_point 
-         FROM creature_stats 
+		`SELECT max_hp, attack, defence, action_point, speed
+         FROM creature_stats
          WHERE creature_id = $1`,
 		creatureID,
-	).Scan(&stats.MaxHP, &stats.Attack, &stats.Defence, &stats.ActionPoint)
+	).Scan(&stats.MaxHP, &stats.Attack, &stats.Defence, &stats.ActionPoint, &stats.Speed)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.CreatureStats{}, fmt.Errorf("creature stats not found for id %s", creatureID)

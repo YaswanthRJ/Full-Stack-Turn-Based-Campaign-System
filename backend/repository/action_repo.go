@@ -23,7 +23,7 @@ func NewActionRepo() ActionRepository {
 }
 
 func (r *actionRepo) Create(ctx context.Context, db DBTX, action domain.Action) error {
-	_, err := db.ExecContext(ctx, "UPDATE actions (id, name, description, multiplier, type, tag, accuracy, action_weight) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", action.ID, action.Name, action.Description, action.Multiplier, action.Type, action.Tag, action.Accuracy, action.ActionWeight)
+	_, err := db.ExecContext(ctx, "INSERT INTO actions (id, name, description, multiplier, type, tag, accuracy, action_weight) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", action.ID, action.Name, action.Description, action.Multiplier, action.Type, action.Tag, action.Accuracy, action.ActionWeight)
 	if err != nil {
 		return fmt.Errorf("actionRepo.Create %w", err)
 	}

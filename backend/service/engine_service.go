@@ -13,6 +13,8 @@ type EngineService interface {
 	EstimateDamage(input EstimateDamageInput) (int, error)
 	EstimateFinalDamage(input EstimateFinalDamageInput) (int, error)
 	RollAccuracy(input AccuracyInput) (bool, error)
+	ResolveTurnOrder(playerSpeed, enemySpeed int) bool
+	ClampHP(hp int) int
 }
 
 type engineService struct {
@@ -133,4 +135,23 @@ func (s *engineService) RollAccuracy(input AccuracyInput) (bool, error) {
 	}
 
 	return s.rng.Float64() <= acc, nil
+}
+
+// ResolveTurnOrder returns true if player goes first
+func (s *engineService) ResolveTurnOrder(playerSpeed, enemySpeed int) bool {
+	if playerSpeed > enemySpeed {
+		return true
+	}
+	if enemySpeed > playerSpeed {
+		return false
+	}
+	return s.rng.Float64() < 0.5
+}
+
+// ClampHP ensures HP never goes below 0
+func (s *engineService) ClampHP(hp int) int {
+	if hp < 0 {
+		return 0
+	}
+	return hp
 }

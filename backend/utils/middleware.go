@@ -29,6 +29,9 @@ func GameMiddlewareMux(next http.Handler) http.Handler {
 }
 
 func GetUserID(ctx context.Context) (string, bool) {
-	id, ok := ctx.Value(userIDKey).(string)
-	return id, ok
+	id, ok := ctx.Value(userIDKey).(uuid.UUID)
+	if !ok {
+		return "", false
+	}
+	return id.String(), true
 }

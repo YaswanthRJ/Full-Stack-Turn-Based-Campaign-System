@@ -8,6 +8,7 @@ type CreatureRequest struct {
 	Attack      int    `json:"attack"`
 	Defence     int    `json:"defence"`
 	ActionPoint int    `json:"action_point"`
+	Speed       int    `json:"speed"`
 }
 
 type CreatureActionRequest struct {
@@ -19,4 +20,5 @@ type UpdateStatsRequest struct {
 	Attack      int `json:"attack"`
 	Defence     int `json:"defence"`
 	ActionPoint int `json:"action_point"`
+	Speed       int `json:"speed"`
 }

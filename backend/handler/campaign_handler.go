@@ -281,3 +281,94 @@ func (h *CampaignHandler) StartCampaign(w http.ResponseWriter, r *http.Request) 
 		"fight":      fight,
 	})
 }
+
+func (h *CampaignHandler) StartNextFight(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	sessionID := r.PathValue("sessionId")
+	if sessionID == "" {
+		http.Error(w, "missing session id", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	userID, ok := utils.GetUserID(ctx)
+	if !ok {
+		http.Error(w, "missing user id", http.StatusUnauthorized)
+		return
+	}
+
+	fight, err := h.service.StartNextFight(ctx, userID, sessionID)
+	if err != nil {
+		log.Printf("StartNextFight failed: %v", err)
+		http.Error(w, "failed to start next fight", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, map[string]interface{}{
+		"fight": fight,
+	})
+}
+
+func (h *CampaignHandler) ResolveRound(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	fightID := r.PathValue("fightId")
+	if fightID == "" {
+		http.Error(w, "missing fight id", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	userID, ok := utils.GetUserID(ctx)
+	if !ok {
+		http.Error(w, "missing user id", http.StatusUnauthorized)
+		return
+	}
+
+	var req ResolveRoundRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.ActionID == "" {
+		http.Error(w, "missing action id", http.StatusBadRequest)
+		return
+	}
+
+	result, err := h.service.ResolveRound(ctx, userID, fightID, req.ActionID)
+	if err != nil {
+		log.Printf("ResolveRound failed: %v", err)
+		http.Error(w, "round resolution failed", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, result)
+}
+
+func (h *CampaignHandler) GetActiveUserSession(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	ctx := r.Context()
+	userID, ok := utils.GetUserID(ctx)
+	if !ok {
+		http.Error(w, "missing user id", http.StatusUnauthorized)
+		return
+	}
+	result, err := h.service.GetActiveUserSession(ctx, userID)
+	if err != nil {
+		log.Printf("GetActiveUserSession failed: %v", err)
+		http.Error(w, "Session checking failed", http.StatusInternalServerError)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, result)
+}
