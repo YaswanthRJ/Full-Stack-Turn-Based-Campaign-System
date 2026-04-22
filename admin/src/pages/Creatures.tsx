@@ -16,16 +16,19 @@
 // }
 
 import { Table } from "../components/Table";
+import type { TableColumn } from "../components/Table.types";
 
 const data = [
   { name: 'Item 1', createdAt: '2026-04-17T10:00:00Z' },
   { name: 'Item 2', createdAt: '2026-04-18T12:00:00Z' },
 ];
 export function Creatures(){
- const columns = [
-    { key: 'name', label: 'Name' },
-    { key: 'createdAt', label: 'Created', type: 'date' as const },
-  ];
+type Row = { name: string; createdAt: string };
+
+const columns: TableColumn<Row>[] = [
+  { key: "name", label: "Name" },
+  { key: "createdAt", label: "Created At", type: "date" },
+];
 
   const creatures = [
     {
