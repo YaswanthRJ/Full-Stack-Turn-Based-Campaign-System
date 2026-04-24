@@ -71,7 +71,7 @@ func main() {
 	// router
 	mux := http.NewServeMux()
 
-	registerGameRoutes(mux, userHandler, campaignHandler)
+	registerGameRoutes(mux, userHandler, campaignHandler, creatureHandler)
 	registerAdminRoutes(mux, actionHandler, creatureHandler, campaignHandler, statsHandler)
 
 	addr := fmt.Sprintf(":%s", port)
@@ -82,14 +82,15 @@ func main() {
 	}
 }
 
-func registerGameRoutes(mux *http.ServeMux, userHandler *handler.UserHandler, campaignHandler *handler.CampaignHandler) {
+func registerGameRoutes(mux *http.ServeMux, userHandler *handler.UserHandler, campaignHandler *handler.CampaignHandler, creaturehandler *handler.CreatureHandler) {
 	gameMux := http.NewServeMux()
 
-	registerSharedCampaignRoutes(gameMux, campaignHandler)
+	registerSharedCampaignRoutes(gameMux, campaignHandler, creaturehandler)
 
 	gameMux.HandleFunc("/user", userHandler.CreateUser)
 
 	gameMux.HandleFunc("GET /campaign/session", campaignHandler.GetActiveUserSession)
+	gameMux.HandleFunc("GET /campaign/{id}/creatures", campaignHandler.GetCreatures)
 	gameMux.HandleFunc("POST /campaign/{id}/start", campaignHandler.StartCampaign)
 	gameMux.HandleFunc("POST /campaign/fight/{fightId}/round", campaignHandler.ResolveRound)
 	gameMux.HandleFunc("POST /campaign/session/{sessionId}/next", campaignHandler.StartNextFight)
@@ -104,7 +105,7 @@ func registerAdminRoutes(
 	campaignHandler *handler.CampaignHandler,
 	statsHandler *handler.StatsHandler,
 ) {
-	registerSharedCampaignRoutes(mux, campaignHandler)
+	registerSharedCampaignRoutes(mux, campaignHandler, creatureHandler)
 
 	// stats route
 	mux.HandleFunc("GET /stats", statsHandler.GetStats)
@@ -120,7 +121,6 @@ func registerAdminRoutes(
 	mux.HandleFunc("POST /creatures", creatureHandler.CreateCreatureWithStats)
 	mux.HandleFunc("GET /creatures", creatureHandler.GetAllCreatures)
 	mux.HandleFunc("POST /creatures/{id}/actions", creatureHandler.AssignActionsToCreature)
-	mux.HandleFunc("GET /creatures/{id}", creatureHandler.GetCreaturesDetails)
 	mux.HandleFunc("PUT /creatures/{id}/stats", creatureHandler.UpdateCreatureStats)
 	mux.HandleFunc("DELETE /creatures/{id}", creatureHandler.DeleteCreature)
 
@@ -135,9 +135,11 @@ func registerAdminRoutes(
 
 }
 
-func registerSharedCampaignRoutes(mux *http.ServeMux, campaignHandler *handler.CampaignHandler) {
+func registerSharedCampaignRoutes(mux *http.ServeMux, campaignHandler *handler.CampaignHandler, creatureHandler *handler.CreatureHandler) {
 	mux.HandleFunc("GET /campaigns", campaignHandler.GetAllCampaigns)
 	mux.HandleFunc("GET /campaigns/{id}", campaignHandler.GetCampaign)
+	mux.HandleFunc("GET /creatures/{id}/action", creatureHandler.GetActions)
+	mux.HandleFunc("GET /creatures/{id}", creatureHandler.GetCreaturesDetails)
 }
 
 func runMigrations(dsn string) error {
@@ -159,13 +161,12 @@ func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-ID")
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-
 		next.ServeHTTP(w, r)
 	})
 }

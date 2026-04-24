@@ -7,10 +7,10 @@ import (
 )
 
 type CampaignTemplate struct {
-	ID          string
-	Name        string
-	Description string
-	Status      string
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
 }
 
 type CampaignStage struct {
@@ -25,18 +25,18 @@ type Campaign struct {
 }
 
 type CampaignSession struct {
-	ID                 string
-	UserID             string
-	CampaignTemplateID string
-	CurrentStageIndex  int
-	PlayerCreatureID   string
-	MaxHP              int
-	CurrentHP          int
-	MaxActionPoint     int
-	CurrentActionPoint int
-	Status             string
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                 string    `json:"id"`
+	UserID             string    `json:"userId"`
+	CampaignTemplateID string    `json:"campaignTemplateId"`
+	CurrentStageIndex  int       `json:"currentStageIndex"`
+	PlayerCreatureID   string    `json:"playerCreatureId"`
+	MaxHP              int       `json:"maxHp"`
+	CurrentHP          int       `json:"currentHp"`
+	MaxActionPoint     int       `json:"maxActionPoint"`
+	CurrentActionPoint int       `json:"currentActionPoint"`
+	Status             string    `json:"status"`
+	CreatedAt          time.Time `json:"createdAt"`
+	UpdatedAt          time.Time `json:"updatedAt"`
 }
 
 const (
@@ -54,22 +54,22 @@ type CreateCampaignSessionInput struct {
 }
 
 type Fight struct {
-	ID                       string
-	CampaignSessionID        string
-	UserID                   string
-	PlayerCurrentHP          int
-	PlayerMaxHP              int
-	PlayerCurrentActionPoint int
-	PlayerMaxActionPoint     int
-	EnemyCreatureID          string
-	EnemyCurrentHP           int
-	EnemyMaxHP               int
-	EnemyCurrentActionPoint  int
-	EnemyMaxActionPoint      int
-	RoundNumber              int
-	Status                   string
-	CreatedAt                time.Time
-	UpdatedAt                time.Time
+	ID                       string    `json:"id"`
+	CampaignSessionID        string    `json:"campaignSessionId"`
+	UserID                   string    `json:"userId"`
+	PlayerCurrentHP          int       `json:"playerCurrentHp"`
+	PlayerMaxHP              int       `json:"playerMaxHp"`
+	PlayerCurrentActionPoint int       `json:"playerCurrentActionPoint"`
+	PlayerMaxActionPoint     int       `json:"playerMaxActionPoint"`
+	EnemyCreatureID          string    `json:"enemyCreatureId"`
+	EnemyCurrentHP           int       `json:"enemyCurrentHp"`
+	EnemyMaxHP               int       `json:"enemyMaxHp"`
+	EnemyCurrentActionPoint  int       `json:"enemyCurrentActionPoint"`
+	EnemyMaxActionPoint      int       `json:"enemyMaxActionPoint"`
+	RoundNumber              int       `json:"roundNumber"`
+	Status                   string    `json:"status"`
+	CreatedAt                time.Time `json:"createdAt"`
+	UpdatedAt                time.Time `json:"updatedAt"`
 }
 
 const (

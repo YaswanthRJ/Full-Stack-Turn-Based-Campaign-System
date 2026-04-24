@@ -30,6 +30,8 @@ type CampaignRepository interface {
 	UpdateSession(ctx context.Context, db DBTX, session *domain.CampaignSession) error
 	GetStageCount(ctx context.Context, db DBTX, campaignID string) (int, error)
 	GetActiveUserSession(ctx context.Context, db DBTX, userID string) (*domain.CampaignSession, error)
+	AbandonActiveSessions(ctx context.Context, db DBTX, userID string) error
+	GetCreatures(ctx context.Context, db DBTX, campaignID string) ([]domain.Creature, error)
 }
 
 type campaignRepo struct {
@@ -639,4 +641,61 @@ func (r *campaignRepo) GetActiveUserSession(ctx context.Context, db DBTX, userID
 	}
 
 	return &session, nil
+}
+
+func (r *campaignRepo) AbandonActiveSessions(ctx context.Context, db DBTX, userID string) error {
+	_, err := db.ExecContext(ctx,
+		`UPDATE fights SET status = 'abandoned'
+		 WHERE status = 'active'
+		   AND campaign_session_id IN (
+		     SELECT id FROM campaign_sessions WHERE user_id = $1 AND status = 'active'
+		   )`,
+		userID,
+	)
+	if err != nil {
+		return fmt.Errorf("campaignRepo.AbandonActiveFights: %w", err)
+	}
+
+	_, err = db.ExecContext(ctx,
+		`UPDATE campaign_sessions SET status = 'abandoned' WHERE user_id = $1 AND status = 'active'`,
+		userID,
+	)
+	if err != nil {
+		return fmt.Errorf("campaignRepo.AbandonActiveSessions: %w", err)
+	}
+	return nil
+}
+
+func (r *campaignRepo) GetCreatures(ctx context.Context, db DBTX, campaignID string) ([]domain.Creature, error) {
+	query := `
+        SELECT c.id, c.name, c.description, c.is_playable
+        FROM creatures c
+        INNER JOIN campaign_playable_creatures pc
+            ON pc.creature_id = c.id
+        WHERE pc.campaign_template_id = $1
+    `
+
+	rows, err := db.QueryContext(ctx, query, campaignID)
+	if err != nil {
+		return nil, fmt.Errorf("GetCreaturesByCampaign: %w", err)
+	}
+	defer rows.Close()
+
+	var result []domain.Creature
+
+	for rows.Next() {
+		var c domain.Creature
+		if err := rows.Scan(
+			&c.ID,
+			&c.Name,
+			&c.Description,
+			&c.IsPlayable,
+		); err != nil {
+			return nil, err
+		}
+
+		result = append(result, c)
+	}
+
+	return result, rows.Err()
 }

@@ -2,6 +2,8 @@ package service
 
 import "backend/domain"
 
+const NoAction = "NO_ACTION"
+
 type CreateCampaignTemplateInput struct {
 	Name        string
 	Description string
@@ -32,9 +34,17 @@ type ResolvedAction struct {
 	block       float64
 }
 
+type actorLog struct {
+	lines       []string
+	isDefensive bool
+	skipped     bool
+	aliveAfter  bool
+}
+
 type ResolveRoundResult struct {
 	Fight                    *domain.Fight `json:"fight"`
 	CampaignSessionCompleted bool          `json:"campaignSessionCompleted"`
+	RoundLog                 []string      `json:"roundLog"`
 }
 type UserSessionResult struct {
 	CurrentSession *domain.CampaignSession `json:"currentSession"`

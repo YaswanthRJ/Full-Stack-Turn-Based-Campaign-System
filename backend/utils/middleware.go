@@ -14,6 +14,10 @@ const userIDKey contextKey = "userID"
 func GameMiddlewareMux(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Header.Get("X-User-ID")
+		if r.URL.Path == "/user" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if userID == "" {
 			http.Error(w, "Unauthorized: missing user ID", http.StatusUnauthorized)
 			return

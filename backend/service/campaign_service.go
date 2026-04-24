@@ -22,6 +22,7 @@ type CampaignService interface {
 	ResolveRound(ctx context.Context, userID string, fightID string, actionID string) (*ResolveRoundResult, error)
 	StartNextFight(ctx context.Context, userID string, sessionID string) (*domain.Fight, error)
 	GetActiveUserSession(ctx context.Context, userID string) (*UserSessionResult, error)
+	GetCreatures(ctx context.Context, campaignID string) ([]domain.Creature, error)
 }
 
 type campaignService struct {
@@ -183,6 +184,17 @@ func (s *campaignService) DeleteCampaign(ctx context.Context, campaignID string)
 	return nil
 }
 
+func (s *campaignService) GetCreatures(ctx context.Context, campaignID string) ([]domain.Creature, error) {
+	if campaignID == "" {
+		return []domain.Creature{}, fmt.Errorf("invalid campaign id")
+	}
+	creatures, err := s.repo.GetCreatures(ctx, s.db, campaignID)
+	if err != nil {
+		return []domain.Creature{}, err
+	}
+	return creatures, nil
+}
+
 func (s *campaignService) StartCampaign(ctx context.Context, userID string, creatureId string, campaignId string) (*domain.Fight, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -202,6 +214,11 @@ func (s *campaignService) StartCampaign(ctx context.Context, userID string, crea
 	// Validate creature in campaign
 	if err = s.repo.ValidateCreature(ctx, tx, campaignId, creatureId); err != nil {
 		return nil, fmt.Errorf("invalid creature id: %w", err)
+	}
+
+	// Abandon any existing active sessions
+	if err = s.repo.AbandonActiveSessions(ctx, tx, userID); err != nil {
+		return nil, fmt.Errorf("abandon active sessions: %w", err)
 	}
 
 	// Get player stats
@@ -277,21 +294,26 @@ func (s *campaignService) ResolveRound(
 
 	playerCreatureID := currentSession.PlayerCreatureID
 
-	valid, err := s.creatureService.ValidateAction(ctx, playerCreatureID, actionID)
-	if err != nil {
-		return nil, fmt.Errorf("validate action: %w", err)
-	}
-	if !valid {
-		return nil, fmt.Errorf("invalid action")
-	}
+	playerSkip := actionID == NoAction
 
-	playerAction, err := s.actionService.GetActionDetails(ctx, actionID)
-	if err != nil {
-		return nil, fmt.Errorf("player action: %w", err)
-	}
+	var playerAction domain.Action
+	if !playerSkip {
+		valid, err := s.creatureService.ValidateAction(ctx, playerCreatureID, actionID)
+		if err != nil {
+			return nil, fmt.Errorf("validate action: %w", err)
+		}
+		if !valid {
+			return nil, fmt.Errorf("invalid action")
+		}
 
-	if playerAction.ActionWeight > float64(currentFight.PlayerCurrentActionPoint) {
-		return nil, fmt.Errorf("insufficient AP")
+		playerAction, err = s.actionService.GetActionDetails(ctx, actionID)
+		if err != nil {
+			return nil, fmt.Errorf("player action: %w", err)
+		}
+
+		if playerAction.ActionWeight > float64(currentFight.PlayerCurrentActionPoint) {
+			return nil, fmt.Errorf("insufficient AP")
+		}
 	}
 
 	// Fetch Stats
@@ -325,14 +347,16 @@ func (s *campaignService) ResolveRound(
 		EnemyMaxHP:       currentFight.EnemyMaxHP,
 	})
 
-	// Resolve Player And Enemy Actions
+	// Resolve actions
 
-	playerResolved, err := s.resolveAction(playerAction, playerStats.Attack)
-	if err != nil {
-		return nil, fmt.Errorf("resolve player action: %w", err)
+	playerResolved := ResolvedAction{}
+	if !playerSkip {
+		playerResolved, err = s.resolveAction(playerAction, playerStats.Attack)
+		if err != nil {
+			return nil, fmt.Errorf("resolve player action: %w", err)
+		}
 	}
 
-	// Enemy passes if no affordable actions
 	var enemyAction *domain.Action
 	enemyResolved := ResolvedAction{}
 	if enemyActionID != "" {
@@ -341,6 +365,7 @@ func (s *campaignService) ResolveRound(
 			return nil, fmt.Errorf("enemy action details: %w", err)
 		}
 		enemyAction = &ea
+
 		enemyResolved, err = s.resolveAction(ea, enemyStats.Attack)
 		if err != nil {
 			return nil, fmt.Errorf("resolve enemy action: %w", err)
@@ -354,7 +379,7 @@ func (s *campaignService) ResolveRound(
 		enemyStats.Speed,
 	)
 
-	// Calculate damage
+	// Damage
 
 	playerDamage := 0
 	if playerResolved.isOffensive && playerResolved.hit {
@@ -384,16 +409,52 @@ func (s *campaignService) ResolveRound(
 	playerHP = s.engineService.ClampHP(playerHP)
 	enemyHP = s.engineService.ClampHP(enemyHP)
 
-	// Update fight state
+	// ===== LOG BUILDING =====
+
+	playerLog := buildActorLog(
+		"Player",
+		playerSkip,
+		playerAction,
+		playerResolved,
+		playerHP > 0,
+	)
+
+	enemyLog := buildActorLog(
+		"Enemy",
+		enemyAction == nil,
+		func() domain.Action {
+			if enemyAction != nil {
+				return *enemyAction
+			}
+			return domain.Action{}
+		}(),
+		enemyResolved,
+		enemyHP > 0,
+	)
+
+	roundLog := buildRoundLog(playerLog, enemyLog, playerFirst)
+
+	// ===== STATE UPDATE =====
 
 	currentFight.PlayerCurrentHP = playerHP
 	currentFight.EnemyCurrentHP = enemyHP
-	currentFight.PlayerCurrentActionPoint = s.applyAPChange(
-		currentFight.PlayerCurrentActionPoint,
-		currentFight.PlayerMaxActionPoint,
-		int(playerAction.ActionWeight),
-		playerAction.Type == ActionDefensive,
-	)
+
+	if playerSkip {
+		currentFight.PlayerCurrentActionPoint = s.applyAPChange(
+			currentFight.PlayerCurrentActionPoint,
+			currentFight.PlayerMaxActionPoint,
+			0,
+			false,
+		)
+	} else {
+		currentFight.PlayerCurrentActionPoint = s.applyAPChange(
+			currentFight.PlayerCurrentActionPoint,
+			currentFight.PlayerMaxActionPoint,
+			int(playerAction.ActionWeight),
+			playerAction.Type == ActionDefensive,
+		)
+	}
+
 	if enemyAction != nil {
 		currentFight.EnemyCurrentActionPoint = s.applyAPChange(
 			currentFight.EnemyCurrentActionPoint,
@@ -402,6 +463,7 @@ func (s *campaignService) ResolveRound(
 			enemyAction.Type == ActionDefensive,
 		)
 	}
+
 	currentFight.RoundNumber++
 
 	if playerHP == 0 {
@@ -415,7 +477,7 @@ func (s *campaignService) ResolveRound(
 		return nil, fmt.Errorf("update fight: %w", err)
 	}
 
-	// Handle fight outcome on session
+	// Session handling
 
 	sessionCompleted := false
 
@@ -453,9 +515,9 @@ func (s *campaignService) ResolveRound(
 	return &ResolveRoundResult{
 		Fight:                    currentFight,
 		CampaignSessionCompleted: sessionCompleted,
+		RoundLog:                 roundLog,
 	}, nil
 }
-
 func (s *campaignService) StartNextFight(ctx context.Context, userID string, sessionID string) (*domain.Fight, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -652,4 +714,89 @@ func (s *campaignService) applyAPChange(
 	}
 
 	return currentAP
+}
+
+func buildActorLog(actor string, skip bool, action domain.Action, resolved ResolvedAction, aliveAfter bool) actorLog {
+	if skip {
+		return actorLog{
+			lines:       []string{actor + " skipped"},
+			isDefensive: false,
+			skipped:     true,
+			aliveAfter:  aliveAfter,
+		}
+	}
+
+	lines := []string{fmt.Sprintf("%s used %s", actor, action.Name)}
+
+	if resolved.isOffensive && !resolved.hit {
+		lines = append(lines, "The move missed")
+	}
+	return actorLog{
+		lines:       lines,
+		isDefensive: action.Type == ActionDefensive,
+		skipped:     false,
+		aliveAfter:  aliveAfter,
+	}
+}
+
+func buildRoundLog(
+	player actorLog,
+	enemy actorLog,
+	playerFirst bool,
+) []string {
+
+	var log []string
+
+	appendWithDefeat := func(al actorLog, opponent actorLog, actorName string) {
+		log = append(log, al.lines...)
+
+		// If opponent died after this action → log defeat immediately
+		if !opponent.aliveAfter {
+			log = append(log, fmt.Sprintf("%s was defeated", actorName))
+		}
+	}
+
+	// ---- Defensive phase ----
+	if player.isDefensive && enemy.isDefensive {
+		if playerFirst {
+			appendWithDefeat(player, enemy, "Enemy")
+			if enemy.aliveAfter {
+				appendWithDefeat(enemy, player, "Player")
+			}
+		} else {
+			appendWithDefeat(enemy, player, "Player")
+			if player.aliveAfter {
+				appendWithDefeat(player, enemy, "Enemy")
+			}
+		}
+		return log
+	}
+
+	if player.isDefensive {
+		log = append(log, player.lines...)
+	}
+	if enemy.isDefensive {
+		log = append(log, enemy.lines...)
+	}
+
+	// ---- Offensive phase ----
+	if !player.isDefensive && !enemy.isDefensive {
+		if playerFirst {
+			appendWithDefeat(player, enemy, "Enemy")
+			if enemy.aliveAfter {
+				appendWithDefeat(enemy, player, "Player")
+			}
+		} else {
+			appendWithDefeat(enemy, player, "Player")
+			if player.aliveAfter {
+				appendWithDefeat(player, enemy, "Enemy")
+			}
+		}
+	} else if !player.isDefensive {
+		appendWithDefeat(player, enemy, "Enemy")
+	} else if !enemy.isDefensive {
+		appendWithDefeat(enemy, player, "Player")
+	}
+
+	return log
 }

@@ -158,3 +158,22 @@ func (h *CreatureHandler) DeleteCreature(w http.ResponseWriter, r *http.Request)
 		"message": "creature deleted successfully",
 	})
 }
+
+func (h *CreatureHandler) GetActions(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	creatureID := r.PathValue("id")
+	if creatureID == "" {
+		http.Error(w, "missing creature id", http.StatusBadRequest)
+		return
+	}
+	ctx := r.Context()
+	creature, err := h.service.GetActions(ctx, creatureID)
+	if err != nil {
+		http.Error(w, "action fetch failed", http.StatusInternalServerError)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, creature)
+}

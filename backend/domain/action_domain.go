@@ -3,14 +3,14 @@ package domain
 import "github.com/google/uuid"
 
 type Action struct {
-	ID           string
-	Name         string
-	Description  string
-	Multiplier   float64
-	Type         string
-	Tag          string
-	Accuracy     float64
-	ActionWeight float64
+	ID           string  `json:"id"`
+	Name         string  `json:"name"`
+	Description  string  `json:"description"`
+	Multiplier   float64 `json:"multiplier"`
+	Type         string  `json:"type"`
+	Tag          string  `json:"tag"`
+	Accuracy     float64 `json:"accuracy"`
+	ActionWeight float64 `json:"actionWeight"`
 }
 
 func NewAction(name string, description string, multiplier float64, actionType string, tag string, accuracy float64, actionWeight float64) Action {

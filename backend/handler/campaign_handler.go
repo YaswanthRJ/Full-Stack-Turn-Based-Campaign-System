@@ -342,6 +342,10 @@ func (h *CampaignHandler) ResolveRound(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing action id", http.StatusBadRequest)
 		return
 	}
+	if req.ActionID != service.NoAction && len(req.ActionID) != 36 {
+		http.Error(w, "invalid action id", http.StatusBadRequest)
+		return
+	}
 
 	result, err := h.service.ResolveRound(ctx, userID, fightID, req.ActionID)
 	if err != nil {
@@ -368,6 +372,26 @@ func (h *CampaignHandler) GetActiveUserSession(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		log.Printf("GetActiveUserSession failed: %v", err)
 		http.Error(w, "Session checking failed", http.StatusInternalServerError)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, result)
+}
+
+func (h *CampaignHandler) GetCreatures(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	ctx := r.Context()
+	campaignID := r.PathValue("id")
+	if campaignID == "" {
+		http.Error(w, "missing campaign id", http.StatusBadRequest)
+		return
+	}
+	result, err := h.service.GetCreatures(ctx, campaignID)
+	if err != nil {
+		log.Printf("GetCreatures failed: %v", err)
+		http.Error(w, "GetCreatures failed", http.StatusInternalServerError)
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, result)
