@@ -7,14 +7,14 @@ type ActionsPanelProps = {
   actions: Action[];
   onSelect: (actionId: string) => void;
   disabled?: boolean;
-  currentAp: number;
+  currentAp?: number;
 };
 
 export function ActionsPanel({
   actions,
   onSelect,
   disabled = false,
-  currentAp
+  currentAp = 0
 }: ActionsPanelProps) {
   return (
     <div className="grid grid-cols-2 gap-2 mt-auto">

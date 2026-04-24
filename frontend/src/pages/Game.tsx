@@ -77,7 +77,7 @@ function handleLogDone() {
 }
 
     return (
-        <div className="flex flex-col gap-3 p-3">
+        <div className="flex flex-col gap-3 p-3 overflow-auto">
             {/* Enemy */}
             <CreatureCard
                 name={state.enemy.name}
@@ -98,7 +98,7 @@ function handleLogDone() {
                 apMax={fight.playerMaxActionPoint}
             />
             {/* Round log */}
-            <div className="border p-2 h-[80px] flex items-start">
+            <div className="border p-2 h-20 flex items-start bg-white rounded-lg">
                 <LogBox
                     logs={lines}
                     onDone={handleLogDone}
@@ -110,7 +110,7 @@ function handleLogDone() {
                 actions={state.actions}
                 onSelect={handleAction}
                 disabled={submitting || playing.current}
-                currentAp={state.fight.playerCurrentActionPoint}
+                currentAp={state.fight?.playerCurrentActionPoint}
             />
         </div>
     );

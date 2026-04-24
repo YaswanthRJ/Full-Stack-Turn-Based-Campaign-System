@@ -8,8 +8,8 @@ type GameState = {
   creatureId: string | null;
   fight: Fight | null;
   actions: Action[];
-  player: Creature;
-  enemy: Creature;
+  player: Creature | null;
+  enemy: Creature | null;
   loading: boolean;
   campaignCompleted: boolean;
 };

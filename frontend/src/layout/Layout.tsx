@@ -14,7 +14,7 @@ export function Layout() {
         </div>
       </div>
       <div className="flex md:hidden min-h-screen justify-center items-center bg-black">
-        <div className="w-full max-w-lg h-dvh overflow-hidden flex-1 p-4 bg-purple-200">
+        <div className="w-full max-w-lg overflow-hidden flex-1 p-4 bg-purple-200 h-full">
           <Outlet />
         </div>
       </div>
