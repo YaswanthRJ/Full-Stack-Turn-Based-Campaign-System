@@ -48,7 +48,7 @@ INSERT INTO creatures (
     id, name, description, is_playable
 ) VALUES
 
-('30000000-0000-0000-0000-000000000001', 'Peasant', 'A common villager who havent touched a weapon before', TRUE),
+('30000000-0000-0000-0000-000000000001', 'Peasant', 'A human vllager', TRUE),
 ('30000000-0000-0000-0000-000000000002', 'Soldier', 'A trained human fighter', TRUE),
 ('30000000-0000-0000-0000-000000000003', 'Wolf',          'A fast aggressive pack hunter', FALSE),
 ('30000000-0000-0000-0000-000000000004', 'Dragon',        'A legendary creature', TRUE);
