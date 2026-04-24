@@ -15,33 +15,71 @@
 //   )
 // }
 
+import { useEffect, useState } from "react";
 import { Table } from "../components/Table";
 import type { TableColumn } from "../components/Table.types";
+import { getActions } from "../service/action.service";
 
-const data = [
-  { name: 'Item 1', createdAt: '2026-04-17T10:00:00Z' },
-  { name: 'Item 2', createdAt: '2026-04-18T12:00:00Z' },
-];
-export function Actions(){
-type Row = { name: string; createdAt: string };
+type ActionRow = {
+  id: string;
+  name: string;
+  description: string;
+  accuracy: number;
+  multiplier: number;
+  tag: string;
+  type: string;
+  actionWeight: number;
+};
 
-const columns: TableColumn<Row>[] = [
-  { key: "name", label: "Name" },
-  { key: "createdAt", label: "Created At", type: "date" },
-];
+export function Actions() {
+  const [actionsData, setActionsData] = useState<ActionRow[]>([]);
 
-  const actions = [
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await getActions();
+        console.log(response);
+        setActionsData(response);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const columns: TableColumn<ActionRow>[] = [
+    { key: "name", label: "Name" },
+    { key: "description", label: "Description" },
     {
-      label: 'Edit',
-      onClick: (row: any) => console.log('Edit', row),
-      variant: 'primary' as const,
+      key: "accuracy",
+      label: "Accuracy",
+      formatter: (value) => `${(value * 100).toFixed(0)}%`,
+    },
+    { key: "multiplier", label: "Multiplier" },
+    { key: "tag", label: "Tag" },
+    { key: "type", label: "Type" },
+    { key: "actionWeight", label: "Weight" },
+  ];
+
+  const rowActions = [
+    {
+      label: "Edit",
+      onClick: (row: ActionRow) => console.log("Edit", row),
+      variant: "primary" as const,
     },
     {
-      label: 'Delete',
-      onClick: (row: any) => console.log('Delete', row),
-      variant: 'danger' as const,
+      label: "Delete",
+      onClick: (row: ActionRow) => console.log("Delete", row),
+      variant: "danger" as const,
     },
   ];
 
-  return <Table columns={columns} data={data} actions={actions} />;
+  return (
+    <Table
+      columns={columns}
+      data={actionsData}
+      actions={rowActions}
+    />
+  );
 }

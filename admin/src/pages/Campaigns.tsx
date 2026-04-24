@@ -1,47 +1,62 @@
-// import { useEffect, useState } from "react"
-// import { getActions } from "../service/action.service"
-// import { type Action } from "../types/action.types"
-
-// export function Actions(){
-//   const [actions,setActions] = useState<Action[]|null>(null)
-//   useEffect(()=>{
-//     getActions().then(setActions)
-//     .catch(console.log)
-//   },[])
-//   return (
-//     <>
-//     Actions
-//     </>
-//   )
-// }
-
+import { useEffect, useState } from "react";
 import { Table } from "../components/Table";
 import type { TableColumn } from "../components/Table.types";
+import { getCampaigns } from "../api/services/campaignservice";
 
-const data = [
-  { name: 'Item 1', createdAt: '2026-04-17T10:00:00Z' },
-  { name: 'Item 2', createdAt: '2026-04-18T12:00:00Z' },
-];
-export function Campaigns(){
-type Row = { name: string; createdAt: string };
+type CampaignRow = {
+  id: string;
+  name: string;
+  description: string;
+  status: string;
+};
 
-const columns: TableColumn<Row>[] = [
-  { key: "name", label: "Name" },
-  { key: "createdAt", label: "Created At", type: "date" },
-];
+export function Campaigns() {
+  const [campaignsData, setCampaignsData] = useState<CampaignRow[]>([]);
 
-  const campaigns = [
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response: any = await getCampaigns();
+        console.log(response);
+
+        setCampaignsData(response.data || response);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const columns: TableColumn<CampaignRow>[] = [
+    { key: "name", label: "Name" },
+    { key: "description", label: "Description" },
     {
-      label: 'Edit',
-      onClick: (row: any) => console.log('Edit', row),
-      variant: 'primary' as const,
-    },
-    {
-      label: 'Delete',
-      onClick: (row: any) => console.log('Delete', row),
-      variant: 'danger' as const,
+      key: "status",
+      label: "Status",
+      formatter: (value) =>
+        value.charAt(0).toUpperCase() + value.slice(1),
     },
   ];
 
-  return <Table columns={columns} data={data} actions={campaigns} />;
+  const actions = [
+    {
+      label: "Edit",
+      onClick: (row: CampaignRow) => console.log("Edit", row),
+      variant: "primary" as const,
+    },
+    {
+      label: "Delete",
+      onClick: (row: CampaignRow) => console.log("Delete", row),
+      variant: "danger" as const,
+    },
+  ];
+
+  return (
+    <Table
+      columns={columns}
+      data={campaignsData}
+      actions={actions}
+    />
+  );
 }

@@ -1,47 +1,63 @@
-// import { useEffect, useState } from "react"
-// import { getActions } from "../service/action.service"
-// import { type Action } from "../types/action.types"
-
-// export function Actions(){
-//   const [actions,setActions] = useState<Action[]|null>(null)
-//   useEffect(()=>{
-//     getActions().then(setActions)
-//     .catch(console.log)
-//   },[])
-//   return (
-//     <>
-//     Actions
-//     </>
-//   )
-// }
-
+import { useEffect, useState } from "react";
 import { Table } from "../components/Table";
 import type { TableColumn } from "../components/Table.types";
+import { getCreatures } from "../api/services/creatureservice";
 
-const data = [
-  { name: 'Item 1', createdAt: '2026-04-17T10:00:00Z' },
-  { name: 'Item 2', createdAt: '2026-04-18T12:00:00Z' },
-];
-export function Creatures(){
-type Row = { name: string; createdAt: string };
+type CreatureRow = {
+  id: string;
+  name: string;
+  description: string;
+  isPlayable: boolean;
+};
 
-const columns: TableColumn<Row>[] = [
-  { key: "name", label: "Name" },
-  { key: "createdAt", label: "Created At", type: "date" },
-];
+export function Creatures() {
+  const [creaturesData, setCreaturesData] = useState<CreatureRow[]>([]);
 
-  const creatures = [
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response: any = await getCreatures();
+        console.log(response);
+
+        // if API returns array directly use response
+        // if axios response use response.data
+        setCreaturesData(response.data || response);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const columns: TableColumn<CreatureRow>[] = [
+    { key: "name", label: "Name" },
+    { key: "description", label: "Description" },
     {
-      label: 'Edit',
-      onClick: (row: any) => console.log('Edit', row),
-      variant: 'primary' as const,
-    },
-    {
-      label: 'Delete',
-      onClick: (row: any) => console.log('Delete', row),
-      variant: 'danger' as const,
+      key: "isPlayable",
+      label: "Playable",
+      formatter: (value) => (value ? "Yes" : "No"),
     },
   ];
 
-  return <Table columns={columns} data={data} actions={creatures} />;
+  const actions = [
+    {
+      label: "Edit",
+      onClick: (row: CreatureRow) => console.log("Edit", row),
+      variant: "primary" as const,
+    },
+    {
+      label: "Delete",
+      onClick: (row: CreatureRow) => console.log("Delete", row),
+      variant: "danger" as const,
+    },
+  ];
+
+  return (
+    <Table
+      columns={columns}
+      data={creaturesData}
+      actions={actions}
+    />
+  );
 }
