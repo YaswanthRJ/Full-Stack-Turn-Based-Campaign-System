@@ -45,8 +45,20 @@ func (r *creatureRepo) CreateStats(ctx context.Context, db DBTX, stats domain.Cr
 }
 
 func (r *creatureRepo) AddActionsToCreature(ctx context.Context, db DBTX, creatureId string, actionIds []string) error {
-	query := `INSERT INTO creature_actions (creature_id, action_id) VALUES `
+	tx, ok := db.(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("AddActionsToCreature requires a transaction")
+	}
 
+	if _, err := tx.ExecContext(ctx, `DELETE FROM creature_actions WHERE creature_id = $1`, creatureId); err != nil {
+		return fmt.Errorf("delete existing actions: %w", err)
+	}
+
+	if len(actionIds) == 0 {
+		return nil
+	}
+
+	query := `INSERT INTO creature_actions (creature_id, action_id) VALUES `
 	values := []interface{}{}
 	for i, actionID := range actionIds {
 		if i > 0 {
@@ -56,9 +68,7 @@ func (r *creatureRepo) AddActionsToCreature(ctx context.Context, db DBTX, creatu
 		values = append(values, creatureId, actionID)
 	}
 
-	query += ` ON CONFLICT (creature_id, action_id) DO NOTHING`
-
-	_, err := db.ExecContext(ctx, query, values...)
+	_, err := tx.ExecContext(ctx, query, values...)
 	return err
 }
 
@@ -98,9 +108,9 @@ func (r *creatureRepo) GetAllCreatures(ctx context.Context, db DBTX) ([]domain.C
 func (r *creatureRepo) GetCreatureDetails(ctx context.Context, db DBTX, creatureID string) (domain.CreatureDetails, error) {
 	var creatureDetails domain.CreatureDetails
 	query := `
-		SELECT 
+		SELECT
 			c.id, c.name, c.description, c.is_playable,
-			s.max_hp, s.attack, s.defence, s.action_point
+			s.max_hp, s.attack, s.defence, s.action_point, s.speed
 		FROM creatures c
 		JOIN creature_stats s ON c.id = s.creature_id
 		WHERE c.id = $1
@@ -115,6 +125,7 @@ func (r *creatureRepo) GetCreatureDetails(ctx context.Context, db DBTX, creature
 		&creatureDetails.Attack,
 		&creatureDetails.Defence,
 		&creatureDetails.ActionPoint,
+		&creatureDetails.Speed,
 	)
 	if err != nil {
 		return domain.CreatureDetails{}, fmt.Errorf("GetCreatureDetails: %w", err)

@@ -77,12 +77,23 @@ func (s *creatureService) AssignActionsToCreature(ctx context.Context, creatureI
 	if creatureID == "" {
 		return errors.New("invalid creatureId")
 	}
-	if len(actionIDs) == 0 {
-		return errors.New("empty action list")
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
 	}
-	if err := s.repo.AddActionsToCreature(ctx, s.db, creatureID, actionIDs); err != nil {
-		return fmt.Errorf("Assign Action: %w", err)
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+	if err := s.repo.AddActionsToCreature(ctx, tx, creatureID, actionIDs); err != nil {
+		return fmt.Errorf("sync actions: %w", err)
 	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+	committed = true
 	return nil
 }
 

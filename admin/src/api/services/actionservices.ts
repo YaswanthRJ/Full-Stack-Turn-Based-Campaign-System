@@ -12,6 +12,16 @@ export interface Action {
   actionWeight: number;
 }
 
+const camelToSnake = (obj: any): any => {
+  const newObj: any = {};
+  for (const key in obj) {
+    const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+    const value = obj[key];
+    newObj[snakeKey] = typeof value === "number" ? value : parseFloat(value) || value;
+  }
+  return newObj;
+};
+
 // GET ALL
 export const getActions = async (): Promise<Action[]> => {
   const response = await api.get<Action[]>("/actions");
@@ -28,7 +38,7 @@ export const getActionById = async (id: string): Promise<Action> => {
 export const createAction = async (
   data: Omit<Action, "id">
 ): Promise<Action> => {
-  const response = await api.post<Action>("/actions", data);
+  const response = await api.post<Action>("/actions", camelToSnake(data));
   return response.data;
 };
 
@@ -37,7 +47,7 @@ export const updateAction = async (
   id: string,
   data: Partial<Action>
 ): Promise<Action> => {
-  const response = await api.put<Action>(`/actions/${id}`, data);
+  const response = await api.put<Action>(`/actions/${id}`, camelToSnake(data));
   return response.data;
 };
 
