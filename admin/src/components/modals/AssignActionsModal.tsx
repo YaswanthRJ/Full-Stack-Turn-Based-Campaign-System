@@ -16,12 +16,27 @@ export function AssignActionsModal({ creatureId, creatureName, onClose }: Props)
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([getActions(), getCreatureActions(creatureId)]).then(([all, assigned]) => {
-      setActions(all);
-      setSelected(new Set(assigned.map((a) => a.id)));
+  const load = async () => {
+    try {
+      setLoading(true);
+      const [all, assigned] = await Promise.all([
+        getActions(),
+        getCreatureActions(creatureId),
+      ]);
+
+      setActions(all ?? []);
+      setSelected(new Set((assigned ?? []).map((a) => a.id)));
+    } catch (err) {
+      console.error("Failed to load actions:", err);
+      setActions([]);
+      setSelected(new Set());
+    } finally {
       setLoading(false);
-    });
-  }, [creatureId]);
+    }
+  };
+
+  load();
+}, [creatureId]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
