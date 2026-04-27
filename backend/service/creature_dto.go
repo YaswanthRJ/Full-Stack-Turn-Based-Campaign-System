@@ -3,6 +3,7 @@ package service
 type CreateCreatureInput struct {
 	Name        string
 	Description string
+	ImageUrl    string
 	IsPlayable  bool
 	MaxHP       int
 	Attack      int

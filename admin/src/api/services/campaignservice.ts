@@ -6,8 +6,11 @@ export interface Campaign {
   description: string;
 }
 
-// GET http://localhost:8080/actions
 export const getCampaigns = async (): Promise<Campaign[]> => {
   const response = await api.get<Campaign[]>("/campaigns");
   return response.data;
+};
+
+export const deleteCampaign = async (id: string): Promise<void> => {
+  await api.delete(`/campaigns/${id}`);
 };

@@ -32,6 +32,7 @@ type CampaignRepository interface {
 	GetActiveUserSession(ctx context.Context, db DBTX, userID string) (*domain.CampaignSession, error)
 	AbandonActiveSessions(ctx context.Context, db DBTX, userID string) error
 	GetCreatures(ctx context.Context, db DBTX, campaignID string) ([]domain.Creature, error)
+	GetOutroBySessionID(ctx context.Context, db DBTX, sessionID string) (*domain.CampaignOutroData, error)
 }
 
 type campaignRepo struct {
@@ -43,8 +44,8 @@ func NewCampaignRepo() CampaignRepository {
 
 func (r *campaignRepo) Create(ctx context.Context, db DBTX, campaign domain.CampaignTemplate) error {
 	_, err := db.ExecContext(ctx,
-		"INSERT INTO campaign_templates (id,name,description,status) VALUES ($1,$2,$3,$4)",
-		campaign.ID, campaign.Name, campaign.Description, campaign.Status,
+		"INSERT INTO campaign_templates (id,name,description, image_url, outro_text, outro_image,status) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+		campaign.ID, campaign.Name, campaign.Description, campaign.ImageUrl, campaign.OutroText, campaign.OutroImage, campaign.Status,
 	)
 	return err
 }
@@ -82,7 +83,7 @@ func (r *campaignRepo) AddStagesToCampaign(ctx context.Context, db DBTX, campaig
 func (r *campaignRepo) GetAllCampaigns(ctx context.Context, db DBTX) ([]domain.CampaignTemplate, error) {
 	var campaigns []domain.CampaignTemplate
 
-	query := `SELECT id, name, description, status FROM campaign_templates`
+	query := `SELECT id, name, description, image_url, outro_text, outro_image, status FROM campaign_templates`
 
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
@@ -97,6 +98,9 @@ func (r *campaignRepo) GetAllCampaigns(ctx context.Context, db DBTX) ([]domain.C
 			&c.ID,
 			&c.Name,
 			&c.Description,
+			&c.ImageUrl,
+			&c.OutroText,
+			&c.OutroImage,
 			&c.Status,
 		); err != nil {
 			return nil, fmt.Errorf("campaignRepo.GetAllCampaigns scan error: %w", err)
@@ -133,7 +137,7 @@ func (r *campaignRepo) fetchCampaignRows(
 	campaignID string,
 ) ([]campaignRow, error) {
 	query := `
-		SELECT t.id, t.name, t.description, t.status, pc.creature_id, s.stage_index, s.enemy_creature_id FROM campaign_templates t LEFT JOIN campaign_playable_creatures pc ON pc.campaign_template_id = t.id LEFT JOIN campaign_stages s ON s.campaign_template_id = t.id WHERE t.id = $1 ORDER BY s.stage_index`
+		SELECT t.id, t.name, t.description, t.image_url, t.outro_text, t.outro_image, t.status, pc.creature_id, s.stage_index, s.enemy_creature_id FROM campaign_templates t LEFT JOIN campaign_playable_creatures pc ON pc.campaign_template_id = t.id LEFT JOIN campaign_stages s ON s.campaign_template_id = t.id WHERE t.id = $1 ORDER BY s.stage_index`
 	rows, err := db.QueryContext(ctx, query, campaignID)
 	if err != nil {
 		return nil, err
@@ -148,6 +152,9 @@ func (r *campaignRepo) fetchCampaignRows(
 			&row.ID,
 			&row.Name,
 			&row.Description,
+			&row.ImageUrl,
+			&row.OutroText,
+			&row.OutroImage,
 			&row.Status,
 			&row.CreatureID,
 			&row.StageIndex,
@@ -171,6 +178,9 @@ func buildCampaign(rows []campaignRow) *domain.Campaign {
 			ID:          rows[0].ID,
 			Name:        rows[0].Name,
 			Description: rows[0].Description,
+			ImageUrl:    rows[0].ImageUrl,
+			OutroText:   rows[0].OutroText,
+			OutroImage:  rows[0].OutroImage,
 			Status:      rows[0].Status,
 		},
 	}
@@ -698,4 +708,30 @@ func (r *campaignRepo) GetCreatures(ctx context.Context, db DBTX, campaignID str
 	}
 
 	return result, rows.Err()
+}
+
+func (r *campaignRepo) GetOutroBySessionID(ctx context.Context, db DBTX, sessionID string) (*domain.CampaignOutroData, error) {
+
+	query := `
+        SELECT ct.outro_image, ct.outro_text
+        FROM campaign_sessions cs
+        INNER JOIN campaign_templates ct
+            ON ct.id = cs.campaign_template_id
+        WHERE cs.id = $1
+    `
+
+	var outro domain.CampaignOutroData
+
+	err := db.QueryRowContext(ctx, query, sessionID).Scan(
+		&outro.OutroImage,
+		&outro.OutroText,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("outro not found for session: %s", sessionID)
+		}
+		return nil, fmt.Errorf("campaignRepo.GetOutroBySessionID: %w", err)
+	}
+
+	return &outro, nil
 }

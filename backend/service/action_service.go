@@ -29,6 +29,7 @@ func (s *actionService) CreateAction(ctx context.Context, action CreateActionInp
 	newAction := domain.NewAction(
 		action.Name,
 		action.Description,
+		action.IconUrl,
 		action.Multiplier,
 		action.Type,
 		action.Tag,
@@ -48,6 +49,7 @@ func (s *actionService) UpdateAction(ctx context.Context, id string, input Updat
 		ID:           id,
 		Name:         input.Name,
 		Description:  input.Description,
+		IconUrl:      input.IconUrl,
 		Type:         input.Type,
 		Multiplier:   input.Multiplier,
 		Tag:          input.Tag,

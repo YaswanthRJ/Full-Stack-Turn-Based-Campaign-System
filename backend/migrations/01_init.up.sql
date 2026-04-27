@@ -12,6 +12,7 @@ CREATE TABLE actions(
     tag TEXT,
     accuracy NUMERIC,
     action_weight NUMERIC,
+    icon_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -19,6 +20,7 @@ CREATE TABLE creatures (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
+    image_url TEXT,
     is_playable BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -45,6 +47,9 @@ CREATE TABLE campaign_templates (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
+    image_url TEXT,
+    outro_text TEXT,
+    outro_image TEXT,
     status TEXT NOT NULL DEFAULT 'inactive'
 );
 

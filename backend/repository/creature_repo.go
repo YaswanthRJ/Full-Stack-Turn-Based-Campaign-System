@@ -30,8 +30,8 @@ func NewCreatureRepo() CreatureRepository {
 
 func (r *creatureRepo) Create(ctx context.Context, db DBTX, creature domain.Creature) error {
 	_, err := db.ExecContext(ctx,
-		"INSERT INTO creatures (id,name,description,is_playable) VALUES ($1,$2,$3,$4)",
-		creature.ID, creature.Name, creature.Description, creature.IsPlayable,
+		"INSERT INTO creatures (id,name,description, image_url, is_playable) VALUES ($1,$2,$3,$4,$5)",
+		creature.ID, creature.Name, creature.Description, creature.ImageUrl, creature.IsPlayable,
 	)
 	return err
 }
@@ -75,7 +75,7 @@ func (r *creatureRepo) AddActionsToCreature(ctx context.Context, db DBTX, creatu
 func (r *creatureRepo) GetAllCreatures(ctx context.Context, db DBTX) ([]domain.Creature, error) {
 	var creatures []domain.Creature
 
-	query := `SELECT id, name, description, is_playable FROM creatures`
+	query := `SELECT id, name, description, image_url, is_playable FROM creatures`
 
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
@@ -90,6 +90,7 @@ func (r *creatureRepo) GetAllCreatures(ctx context.Context, db DBTX) ([]domain.C
 			&c.ID,
 			&c.Name,
 			&c.Description,
+			&c.ImageUrl,
 			&c.IsPlayable,
 		); err != nil {
 			return nil, fmt.Errorf("creatureRepo.GetAllCreatures scan error: %w", err)
@@ -109,7 +110,7 @@ func (r *creatureRepo) GetCreatureDetails(ctx context.Context, db DBTX, creature
 	var creatureDetails domain.CreatureDetails
 	query := `
 		SELECT
-			c.id, c.name, c.description, c.is_playable,
+			c.id, c.name, c.description, c.image_url, c.is_playable,
 			s.max_hp, s.attack, s.defence, s.action_point, s.speed
 		FROM creatures c
 		JOIN creature_stats s ON c.id = s.creature_id
@@ -120,6 +121,7 @@ func (r *creatureRepo) GetCreatureDetails(ctx context.Context, db DBTX, creature
 		&creatureDetails.ID,
 		&creatureDetails.Name,
 		&creatureDetails.Description,
+		&creatureDetails.ImageUrl,
 		&creatureDetails.IsPlayable,
 		&creatureDetails.MaxHP,
 		&creatureDetails.Attack,

@@ -44,7 +44,7 @@ func (s *creatureService) CreateCreatureWithStats(ctx context.Context, creature 
 		}
 	}()
 
-	newcreature := domain.NewCreature(creature.Name, creature.Description, creature.IsPlayable)
+	newcreature := domain.NewCreature(creature.Name, creature.Description, creature.ImageUrl, creature.IsPlayable)
 	newCreatureStats := domain.NewCreatureStats(newcreature.ID, creature.MaxHP, creature.Attack, creature.Defence, creature.ActionPoint, creature.Speed)
 	if err = s.repo.Create(ctx, tx, newcreature); err != nil {
 		return fmt.Errorf("create creature: %w", err)

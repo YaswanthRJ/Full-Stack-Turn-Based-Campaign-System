@@ -3,6 +3,7 @@ package service
 type CreateActionInput struct {
 	Name         string
 	Description  string
+	IconUrl      string
 	Multiplier   float64
 	Type         string
 	Tag          string
@@ -13,6 +14,7 @@ type CreateActionInput struct {
 type UpdateActionInput struct {
 	Name         string
 	Description  string
+	IconUrl      string
 	Type         string
 	Multiplier   float64
 	Tag          string

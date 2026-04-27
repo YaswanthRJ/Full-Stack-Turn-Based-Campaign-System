@@ -5,6 +5,7 @@ import type {
   ResolveActionResponse,
   StartCampaignResponse,
   Fight,
+  CampaignOutroData,
 } from "../types/campaign.types";
 import { get, post } from "./api";
 
@@ -66,4 +67,14 @@ export async function resolveAction(fightId: string, actionId: string): Promise<
 export async function startNextFight(sessionId: string): Promise<Fight> {
   const res = await post<{ fight: Fight }>(`campaign/session/${sessionId}/next`, {});
   return res.fight;
+}
+
+export async function getOutro(sessionId: string): Promise<CampaignOutroData>{
+try{
+  const res = await get<CampaignOutroData>(`campaign/session/${sessionId}/success`)
+  return res
+} catch (error) {
+    console.error("Failed to get outro:", error);
+    throw new Error("Could not fetch outro");
+  }
 }

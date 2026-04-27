@@ -10,6 +10,9 @@ type CampaignTemplate struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	ImageUrl    string `json:"imageUrl"`
+	OutroText   string `json:"outroText"`
+	OutroImage  string `json:"outroImage"`
 	Status      string `json:"status"`
 }
 
@@ -137,4 +140,9 @@ func NewCampaignSession(input CreateCampaignSessionInput) CampaignSession {
 		CreatedAt:          now,
 		UpdatedAt:          now,
 	}
+}
+
+type CampaignOutroData struct {
+	OutroImage string `json:"outroImage"`
+	OutroText  string `json:"outroText"`
 }

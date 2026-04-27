@@ -6,6 +6,7 @@ type Creature struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	ImageUrl    string `json:"imageUrl"`
 	IsPlayable  bool   `json:"isPlayable"`
 }
 
@@ -23,6 +24,7 @@ type CreatureDetails struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	ImageUrl    string `json:"imageUrl"`
 	IsPlayable  bool   `json:"isPlayable"`
 	MaxHP       int    `json:"maxHp"`
 	Attack      int    `json:"attack"`
@@ -31,11 +33,12 @@ type CreatureDetails struct {
 	Speed       int    `json:"speed"`
 }
 
-func NewCreature(name string, description string, isPlayable bool) Creature {
+func NewCreature(name string, description string, imageUrl string, isPlayable bool) Creature {
 	return Creature{
 		ID:          uuid.New().String(),
 		Name:        name,
 		Description: description,
+		ImageUrl:    imageUrl,
 		IsPlayable:  isPlayable,
 	}
 }

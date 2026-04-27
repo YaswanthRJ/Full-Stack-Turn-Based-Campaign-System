@@ -94,6 +94,7 @@ func registerGameRoutes(mux *http.ServeMux, userHandler *handler.UserHandler, ca
 	gameMux.HandleFunc("POST /campaign/{id}/start", campaignHandler.StartCampaign)
 	gameMux.HandleFunc("POST /campaign/fight/{fightId}/round", campaignHandler.ResolveRound)
 	gameMux.HandleFunc("POST /campaign/session/{sessionId}/next", campaignHandler.StartNextFight)
+	gameMux.HandleFunc("GET /campaign/session/{sessionId}/success", campaignHandler.GetCampaignOutro)
 
 	mux.Handle("/game/", http.StripPrefix("/game", utils.GameMiddlewareMux(gameMux)))
 }

@@ -29,6 +29,7 @@ func (h *ActionHandler) CreateAction(w http.ResponseWriter, r *http.Request) {
 	action := service.CreateActionInput{
 		Name:         req.Name,
 		Description:  req.Description,
+		IconUrl:      req.IconUrl,
 		Multiplier:   float64(req.Multiplier),
 		Type:         req.Type,
 		Tag:          req.Tag,
@@ -63,6 +64,7 @@ func (h *ActionHandler) UpdateAction(w http.ResponseWriter, r *http.Request) {
 	input := service.UpdateActionInput{
 		Name:         req.Name,
 		Description:  req.Description,
+		IconUrl:      req.IconUrl,
 		Type:         req.Type,
 		Multiplier:   req.Multiplier,
 		Tag:          req.Tag,

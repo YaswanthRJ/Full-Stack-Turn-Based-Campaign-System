@@ -3,6 +3,7 @@ package handler
 type ActionRequest struct {
 	Name         string  `json:"name"`
 	Description  string  `json:"description"`
+	IconUrl      string  `json:"iconUrl"`
 	Multiplier   float64 `json:"multiplier"`
 	Type         string  `json:"type"`
 	Tag          string  `json:"tag"`

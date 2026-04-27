@@ -10,7 +10,7 @@ import (
 )
 
 type CampaignService interface {
-	CreateCampaignTemplate(ctx context.Context, input CreateCampaignTemplateInput) error
+	CreateCampaignTemplate(ctx context.Context, input CreateCampaignTemplateInput) (string, error)
 	AddCreaturesToCampaign(ctx context.Context, input AddCreaturesToCampaignInput) error
 	AddStagesToCampaign(ctx context.Context, input AddStagesInput) error
 	GetAllCampaigns(ctx context.Context) ([]domain.CampaignTemplate, error)
@@ -23,6 +23,7 @@ type CampaignService interface {
 	StartNextFight(ctx context.Context, userID string, sessionID string) (*domain.Fight, error)
 	GetActiveUserSession(ctx context.Context, userID string) (*UserSessionResult, error)
 	GetCreatures(ctx context.Context, campaignID string) ([]domain.Creature, error)
+	GetCampaignOutro(ctx context.Context, userID string, sessionID string) (*domain.CampaignOutroData, error)
 }
 
 type campaignService struct {
@@ -52,22 +53,22 @@ func NewCampaignService(
 func (s *campaignService) CreateCampaignTemplate(
 	ctx context.Context,
 	input CreateCampaignTemplateInput,
-) error {
+) (string, error) {
 
 	if input.Name == "" {
-		return errors.New("invalid campaign name")
+		return "", errors.New("invalid campaign name")
 	}
 	if input.Description == "" {
-		return errors.New("invalid campaign description")
+		return "", errors.New("invalid campaign description")
 	}
 
 	template := domain.NewCampaignTemplate(input.Name, input.Description)
 
 	if err := s.repo.Create(ctx, s.db, template); err != nil {
-		return fmt.Errorf("create campaign template: %w", err)
+		return "", fmt.Errorf("create campaign template: %w", err)
 	}
 
-	return nil
+	return template.ID, nil
 }
 
 func (s *campaignService) AddCreaturesToCampaign(
@@ -799,4 +800,35 @@ func buildRoundLog(
 	}
 
 	return log
+}
+
+func (s *campaignService) GetCampaignOutro(
+	ctx context.Context,
+	userID string,
+	sessionID string,
+) (*domain.CampaignOutroData, error) {
+
+	if sessionID == "" {
+		return nil, fmt.Errorf("invalid session id")
+	}
+
+	session, err := s.repo.GetSession(ctx, s.db, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("get session: %w", err)
+	}
+
+	if session.UserID != userID {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	if session.Status != domain.SessionStatusCompleted {
+		return nil, fmt.Errorf("campaign not completed")
+	}
+
+	outro, err := s.repo.GetOutroBySessionID(ctx, s.db, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("get outro: %w", err)
+	}
+
+	return outro, nil
 }

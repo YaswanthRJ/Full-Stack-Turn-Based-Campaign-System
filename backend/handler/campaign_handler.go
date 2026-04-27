@@ -4,6 +4,7 @@ import (
 	"backend/service"
 	"backend/utils"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -32,11 +33,13 @@ func (h *CampaignHandler) CreateCampaignTemplate(w http.ResponseWriter, r *http.
 		Name:        req.Name,
 		Description: req.Description,
 	}
-	if err := h.service.CreateCampaignTemplate(ctx, input); err != nil {
+	id, err := h.service.CreateCampaignTemplate(ctx, input)
+	if err != nil {
 		http.Error(w, "campaign creation failed", http.StatusInternalServerError)
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{
+		"id":      id,
 		"message": "campaign created successfully",
 	})
 }
@@ -111,6 +114,7 @@ func (h *CampaignHandler) GetAllCampaigns(w http.ResponseWriter, r *http.Request
 	campaigns, err := h.service.GetAllCampaigns(ctx)
 	if err != nil {
 		http.Error(w, "campaign fetch failed", http.StatusInternalServerError)
+		fmt.Println(err)
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, campaigns)
@@ -395,4 +399,34 @@ func (h *CampaignHandler) GetCreatures(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, result)
+}
+
+func (h *CampaignHandler) GetCampaignOutro(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	sessionID := r.PathValue("sessionId")
+	if sessionID == "" {
+		http.Error(w, "missing session id", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+
+	userID, ok := utils.GetUserID(ctx)
+	if !ok {
+		http.Error(w, "missing user id", http.StatusUnauthorized)
+		return
+	}
+
+	outro, err := h.service.GetCampaignOutro(ctx, userID, sessionID)
+	if err != nil {
+		log.Printf("GetCampaignOutro failed: %v", err)
+		http.Error(w, "failed to get campaign outro", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, outro)
 }

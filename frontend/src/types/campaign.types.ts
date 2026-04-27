@@ -67,3 +67,8 @@ export type ResolveActionResponse = {
     campaignSessionCompleted: boolean
     roundLog: string[]
 }
+
+export type CampaignOutroData = {
+    outroImage: string;
+    outroText: string;
+}

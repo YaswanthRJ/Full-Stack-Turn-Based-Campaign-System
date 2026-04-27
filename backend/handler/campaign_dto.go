@@ -6,7 +6,7 @@ type CreateCampaignTemplateRequest struct {
 }
 
 type AddCampaignCreaturesRequest struct {
-	CreatureIDs []string `json:"creature_ids"`
+	CreatureIDs []string `json:"creatureIds"`
 }
 
 type AddCampaignStagesRequest struct {
@@ -14,8 +14,8 @@ type AddCampaignStagesRequest struct {
 }
 
 type CampaignStageRequest struct {
-	StageIndex      int    `json:"stage_index"`
-	EnemyCreatureID string `json:"enemy_creature_id"`
+	StageIndex      int    `json:"stageIndex"`
+	EnemyCreatureID string `json:"enemyCreatureId"`
 }
 
 type updateStageRequest struct {

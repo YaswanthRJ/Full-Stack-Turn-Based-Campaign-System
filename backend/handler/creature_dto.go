@@ -3,6 +3,7 @@ package handler
 type CreatureRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	ImageUrl    string `json:"imageUrl"`
 	IsPlayable  bool   `json:"is_playable"`
 	MaxHP       int    `json:"maxhp"`
 	Attack      int    `json:"attack"`

@@ -29,6 +29,7 @@ func (h *CreatureHandler) CreateCreatureWithStats(w http.ResponseWriter, r *http
 	creature := service.CreateCreatureInput{
 		Name:        req.Name,
 		Description: req.Description,
+		ImageUrl:    req.ImageUrl,
 		IsPlayable:  req.IsPlayable,
 		MaxHP:       req.MaxHP,
 		Attack:      req.Attack,
