@@ -33,7 +33,9 @@ export function useStartCampaign() {
                 player,
                 enemy,
                 loading: false,
+                campaignCompleted:false
             });
+
 
             // go to game screen
             navigate("/game");

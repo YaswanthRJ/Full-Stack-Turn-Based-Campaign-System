@@ -24,6 +24,7 @@ type CreatureEditData = CreatureRequest & { id: string };
 const emptyForm: CreatureRequest = {
   name: "",
   description: "",
+  imageUrl: "",
   isPlayable: false,
   maxhp: 0,
   attack: 0,
@@ -60,6 +61,7 @@ export function Creatures() {
       id: details.id,
       name: details.name,
       description: details.description,
+      imageUrl: details.imageUrl ?? "",
       isPlayable: details.isPlayable,
       maxhp: details.maxHp,
       attack: details.attack,
@@ -82,6 +84,7 @@ export function Creatures() {
       await createCreature({
         name: form.name,
         description: form.description,
+        imageUrl: form.imageUrl,
         is_playable: form.isPlayable,
         maxhp: form.maxhp,
         attack: form.attack,

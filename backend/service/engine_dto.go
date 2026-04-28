@@ -10,6 +10,8 @@ const (
 	lowAPOffenceBoost = 1.2
 )
 
+const MIN_ACTION_THRESHOLD = 0.8
+
 type EnemyActionInput struct {
 	AvailableActions []domain.Action
 	EnemyCurrentAP   int
@@ -46,4 +48,9 @@ type EstimateFinalDamageInput struct {
 
 type AccuracyInput struct {
 	Accuracy float64
+}
+
+type EnemyActionResult struct {
+	ActionID string
+	Skip     bool
 }

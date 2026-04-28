@@ -115,11 +115,14 @@ func NewFight(input CreateFightInput) Fight {
 	}
 }
 
-func NewCampaignTemplate(name string, description string) CampaignTemplate {
+func NewCampaignTemplate(name string, description string, imageUrl string, outroText string, outroImage string) CampaignTemplate {
 	return CampaignTemplate{
 		ID:          uuid.New().String(),
 		Name:        name,
 		Description: description,
+		ImageUrl:    imageUrl,
+		OutroText:   outroText,
+		OutroImage:  outroImage,
 		Status:      "active",
 	}
 }

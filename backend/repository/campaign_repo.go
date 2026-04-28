@@ -678,7 +678,7 @@ func (r *campaignRepo) AbandonActiveSessions(ctx context.Context, db DBTX, userI
 
 func (r *campaignRepo) GetCreatures(ctx context.Context, db DBTX, campaignID string) ([]domain.Creature, error) {
 	query := `
-        SELECT c.id, c.name, c.description, c.is_playable
+        SELECT c.id, c.name, c.description, c.is_playable, c.image_url
         FROM creatures c
         INNER JOIN campaign_playable_creatures pc
             ON pc.creature_id = c.id
@@ -700,6 +700,7 @@ func (r *campaignRepo) GetCreatures(ctx context.Context, db DBTX, campaignID str
 			&c.Name,
 			&c.Description,
 			&c.IsPlayable,
+			&c.ImageUrl,
 		); err != nil {
 			return nil, err
 		}

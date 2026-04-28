@@ -3,6 +3,7 @@ import { GenericFormModal, type FieldConfig } from "./GenericFormModal";
 export type CreatureRequest = {
   name: string;
   description: string;
+  imageUrl: string;
   isPlayable: boolean;
   maxhp: number;
   attack: number;
@@ -22,6 +23,7 @@ type Props = {
 const creatureFields: FieldConfig[] = [
   { key: "name", label: "Name" },
   { key: "description", label: "Description", type: "text" },
+  { key: "imageUrl", label: "Image URL", type: "text" },
   { key: "isPlayable", label: "Playable", type: "checkbox" },
   { key: "maxhp", label: "Max Health", type: "number" },
   { key: "attack", label: "Attack", type: "number" },

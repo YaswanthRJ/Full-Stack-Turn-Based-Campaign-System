@@ -3,6 +3,9 @@ package handler
 type CreateCampaignTemplateRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	ImageUrl    string `json:"imageUrl"`
+	OutroText   string `json:"outroText"`
+	OutroImage  string `json:"outroImage"`
 }
 
 type AddCampaignCreaturesRequest struct {

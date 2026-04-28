@@ -9,7 +9,7 @@ import (
 )
 
 type EngineService interface {
-	ResolveEnemyAction(input EnemyActionInput) (string, error)
+	ResolveEnemyAction(input EnemyActionInput) (EnemyActionResult, error)
 	EstimateDamage(input EstimateDamageInput) (int, error)
 	EstimateFinalDamage(input EstimateFinalDamageInput) (int, error)
 	RollAccuracy(input AccuracyInput) (bool, error)
@@ -28,28 +28,36 @@ func NewEngineService() EngineService {
 }
 
 // ResolveEnemyAction selects the best enemy action based on combat state.
-func (s *engineService) ResolveEnemyAction(input EnemyActionInput) (string, error) {
+func (s *engineService) ResolveEnemyAction(input EnemyActionInput) (EnemyActionResult, error) {
 	if input.EnemyMaxHP <= 0 || input.PlayerMaxHP <= 0 {
-		return "", fmt.Errorf("invalid HP values")
+		return EnemyActionResult{}, fmt.Errorf("invalid HP values")
 	}
 
 	if input.EnemyMaxAP <= 0 || input.PlayerMaxAP <= 0 {
-		return "", fmt.Errorf("invalid AP values")
+		return EnemyActionResult{}, fmt.Errorf("invalid AP values")
 	}
 
 	valid := filterValidActions(input.AvailableActions, input.EnemyCurrentAP)
 
 	if len(valid) == 0 {
-		return "", fmt.Errorf("no valid actions")
+		return EnemyActionResult{
+			Skip: true,
+		}, nil
 	}
 
 	scored := scoreActions(valid, input)
 
 	if len(scored) == 0 {
-		return "", fmt.Errorf("no scorable actions")
+		return EnemyActionResult{Skip: true}, nil
 	}
 
-	// Shuffle first so tied scores don't always pick same action
+	best := scored[0]
+
+	if best.Score < MIN_ACTION_THRESHOLD {
+		return EnemyActionResult{Skip: true}, nil
+	}
+
+	// Shuffle first so ties aren't deterministic
 	s.rng.Shuffle(len(scored), func(i, j int) {
 		scored[i], scored[j] = scored[j], scored[i]
 	})
@@ -60,7 +68,10 @@ func (s *engineService) ResolveEnemyAction(input EnemyActionInput) (string, erro
 
 	chosen := pickWithRandomness(scored, s.rng)
 
-	return chosen.Action.ID, nil
+	return EnemyActionResult{
+		ActionID: chosen.Action.ID,
+		Skip:     false,
+	}, nil
 }
 
 // EstimateDamage returns raw pre-mitigation damage.

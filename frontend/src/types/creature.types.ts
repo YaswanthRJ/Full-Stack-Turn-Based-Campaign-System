@@ -3,6 +3,8 @@ export type Creature = {
   name: string;
   description: string;
   isPlayable: boolean;
+  imageUrl: string;
+
 };
 
 export type CreatureStats = {
@@ -20,6 +22,7 @@ export type CreatureDetails = {
   name: string;
   description: string;
   isPlayable: boolean;
+  imageUrl: string;
   maxHP: number;
   attack: number;
   defence: number;

@@ -11,20 +11,20 @@ INSERT INTO actions (
     multiplier, tag, accuracy, action_weight, icon_url
 ) VALUES
 
-('20000000-0000-0000-0000-000000000001', 'Bite',         'A quick biting attack',      'offensive', 1.00, 'physical', 0.90, 2, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000002', 'Scratch',      'A light scratching attack',  'offensive', 0.80, 'physical', 0.95, 2, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000003', 'Tackle',       'A forceful body slam',       'offensive', 1.40, 'physical', 0.80, 4, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000004', 'Punch',        'A basic punch',              'offensive', 0.90, 'physical', 0.95, 2, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000005', 'Kick',         'A stronger kick',            'offensive', 1.20, 'physical', 0.85, 3, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000006', 'Slash',        'A standard weapon slash',    'offensive', 1.10, 'physical', 0.90, 3, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000007', 'Heavy Slash',  'A heavy committed strike',   'offensive', 1.50, 'physical', 0.85, 5, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000008', 'Stab',         'A quick precise stab',       'offensive', 1.10, 'physical', 0.95, 2, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000009', 'Shield Bash',  'Strike with shield weight',  'offensive', 1.20, 'control',  0.90, 3, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000010', 'Maul',         'A savage crushing attack',   'offensive', 1.60, 'physical', 0.85, 5, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000011', 'Flamethrower', 'A stream of burning flame',  'offensive', 1.80, 'fire',     0.85, 6, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000012', 'Sky Attack',   'A diving strike from above', 'offensive', 2.00, 'physical', 0.75, 7, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000013', 'Dodge',        'Evade incoming attacks',     'defensive', 0.10, 'evasion',  0.50, 2, '/assets/actions/action.png'),
-('20000000-0000-0000-0000-000000000014', 'Block',        'Reduce incoming damage',     'defensive', 0.70, 'defense',  0.90, 2, '/assets/actions/action.png');
+('20000000-0000-0000-0000-000000000001', 'Bite',         'A quick biting attack',      'offensive', 1.00, 'physical', 0.90, 2, 'action.png'),
+('20000000-0000-0000-0000-000000000002', 'Scratch',      'A light scratching attack',  'offensive', 0.80, 'physical', 0.95, 2, 'action.png'),
+('20000000-0000-0000-0000-000000000003', 'Tackle',       'A forceful body slam',       'offensive', 1.40, 'physical', 0.80, 4, 'action.png'),
+('20000000-0000-0000-0000-000000000004', 'Punch',        'A basic punch',              'offensive', 0.90, 'physical', 0.95, 2, 'action.png'),
+('20000000-0000-0000-0000-000000000005', 'Kick',         'A stronger kick',            'offensive', 1.20, 'physical', 0.85, 3, 'action.png'),
+('20000000-0000-0000-0000-000000000006', 'Slash',        'A standard weapon slash',    'offensive', 1.10, 'physical', 0.90, 3, 'action.png'),
+('20000000-0000-0000-0000-000000000007', 'Heavy Slash',  'A heavy committed strike',   'offensive', 1.50, 'physical', 0.85, 5, 'action.png'),
+('20000000-0000-0000-0000-000000000008', 'Stab',         'A quick precise stab',       'offensive', 1.10, 'physical', 0.95, 2, 'action.png'),
+('20000000-0000-0000-0000-000000000009', 'Shield Bash',  'Strike with shield weight',  'offensive', 1.20, 'control',  0.90, 3, 'action.png'),
+('20000000-0000-0000-0000-000000000010', 'Maul',         'A savage crushing attack',   'offensive', 1.60, 'physical', 0.85, 5, 'action.png'),
+('20000000-0000-0000-0000-000000000011', 'Flamethrower', 'A stream of burning flame',  'offensive', 1.80, 'fire',     0.85, 6, 'action.png'),
+('20000000-0000-0000-0000-000000000012', 'Sky Attack',   'A diving strike from above', 'offensive', 2.00, 'physical', 0.75, 7, 'action.png'),
+('20000000-0000-0000-0000-000000000013', 'Dodge',        'Evade incoming attacks',     'defensive', 0.10, 'evasion',  0.50, 2, 'action.png'),
+('20000000-0000-0000-0000-000000000014', 'Block',        'Reduce incoming damage',     'defensive', 0.70, 'defense',  0.90, 2, 'action.png');
 
 
 -- =====================================================
@@ -35,10 +35,10 @@ INSERT INTO creatures (
     id, name, description, image_url, is_playable
 ) VALUES
 
-('30000000-0000-0000-0000-000000000001', 'Peasant', 'A human villager', '/assets/creatures/creature.png', TRUE),
-('30000000-0000-0000-0000-000000000002', 'Soldier', 'A trained human fighter', '/assets/creatures/creature.png', TRUE),
-('30000000-0000-0000-0000-000000000003', 'Wolf', 'A fast aggressive pack hunter', '/assets/creatures/creature.png', FALSE),
-('30000000-0000-0000-0000-000000000004', 'Dragon', 'A legendary creature', '/assets/creatures/creature.png', TRUE);
+('30000000-0000-0000-0000-000000000001', 'Peasant', 'A human villager', 'creature.png', TRUE),
+('30000000-0000-0000-0000-000000000002', 'Soldier', 'A trained human fighter', 'creature.png', TRUE),
+('30000000-0000-0000-0000-000000000003', 'Wolf', 'A fast aggressive pack hunter', 'creature.png', FALSE),
+('30000000-0000-0000-0000-000000000004', 'Dragon', 'A legendary creature', 'creature.png', TRUE);
 
 
 -- =====================================================
@@ -92,17 +92,17 @@ INSERT INTO campaign_templates (
 ('50000000-0000-0000-0000-000000000001',
  'Wolf Pack',
  'Clear out a pack of wolves',
- '/assets/campaigns/start.png',
+ 'start.png',
  'The wolves have been defeated and peace returns to the land.',
- '/assets/campaigns/end.png',
+ 'end.png',
  'active'),
 
 ('50000000-0000-0000-0000-000000000002',
  'Recover Egg',
  'Punish the villains who destroyed your eggs',
- '/assets/campaigns/start.png',
+ 'start.png',
  'Your enemies lie defeated. Vengeance is yours.',
- '/assets/campaigns/end.png',
+ 'end.png',
  'active');
 
 -- =====================================================

@@ -32,6 +32,9 @@ func (h *CampaignHandler) CreateCampaignTemplate(w http.ResponseWriter, r *http.
 	input := service.CreateCampaignTemplateInput{
 		Name:        req.Name,
 		Description: req.Description,
+		ImageUrl:    req.ImageUrl,
+		OutroText:   req.OutroText,
+		OutroImage:  req.OutroImage,
 	}
 	id, err := h.service.CreateCampaignTemplate(ctx, input)
 	if err != nil {

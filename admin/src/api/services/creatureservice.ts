@@ -10,6 +10,7 @@ export interface Creature {
 export interface CreateCreaturePayload {
   name: string;
   description: string;
+  imageUrl: string;
   is_playable: boolean;
   maxhp: number;
   attack: number;

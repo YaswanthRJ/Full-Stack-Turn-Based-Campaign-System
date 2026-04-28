@@ -42,6 +42,7 @@ export function useGameInitializer() {
           player,
           enemy,
           loading: false,
+          campaignCompleted: false,
         });
       } catch (err) {
         console.error("Game init failed:", err);

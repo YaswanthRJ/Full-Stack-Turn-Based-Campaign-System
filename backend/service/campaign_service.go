@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type CampaignService interface {
@@ -62,7 +63,7 @@ func (s *campaignService) CreateCampaignTemplate(
 		return "", errors.New("invalid campaign description")
 	}
 
-	template := domain.NewCampaignTemplate(input.Name, input.Description)
+	template := domain.NewCampaignTemplate(input.Name, input.Description, input.ImageUrl, input.OutroText, input.OutroImage)
 
 	if err := s.repo.Create(ctx, s.db, template); err != nil {
 		return "", fmt.Errorf("create campaign template: %w", err)
@@ -273,7 +274,7 @@ func (s *campaignService) ResolveRound(
 		}
 	}()
 
-	// Validation
+	// ===== VALIDATION =====
 
 	currentFight, err := s.repo.GetFight(ctx, tx, fightID)
 	if err != nil {
@@ -294,7 +295,6 @@ func (s *campaignService) ResolveRound(
 	}
 
 	playerCreatureID := currentSession.PlayerCreatureID
-
 	playerSkip := actionID == NoAction
 
 	var playerAction domain.Action
@@ -317,7 +317,7 @@ func (s *campaignService) ResolveRound(
 		}
 	}
 
-	// Fetch Stats
+	// ===== FETCH STATS =====
 
 	playerStats, err := s.creatureService.GetStats(ctx, playerCreatureID)
 	if err != nil {
@@ -334,7 +334,7 @@ func (s *campaignService) ResolveRound(
 		return nil, fmt.Errorf("enemy actions: %w", err)
 	}
 
-	enemyActionID, err := s.engineService.ResolveEnemyAction(EnemyActionInput{
+	enemyResult, err := s.engineService.ResolveEnemyAction(EnemyActionInput{
 		AvailableActions: enemyActions,
 		EnemyCurrentAP:   currentFight.EnemyCurrentActionPoint,
 		EnemyMaxAP:       currentFight.EnemyMaxActionPoint,
@@ -347,8 +347,30 @@ func (s *campaignService) ResolveRound(
 		EnemyCurrentHP:   currentFight.EnemyCurrentHP,
 		EnemyMaxHP:       currentFight.EnemyMaxHP,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("resolve enemy action: %w", err)
+	}
 
-	// Resolve actions
+	enemySkip := enemyResult.Skip
+
+	var enemyAction *domain.Action
+	enemyResolved := ResolvedAction{}
+
+	if !enemySkip {
+		ea, err := s.actionService.GetActionDetails(ctx, enemyResult.ActionID)
+		if err != nil {
+			return nil, fmt.Errorf("enemy action details: %w", err)
+		}
+
+		enemyAction = &ea
+
+		enemyResolved, err = s.resolveAction(ea, enemyStats.Attack)
+		if err != nil {
+			return nil, fmt.Errorf("resolve enemy action: %w", err)
+		}
+	}
+
+	// ===== RESOLVE PLAYER =====
 
 	playerResolved := ResolvedAction{}
 	if !playerSkip {
@@ -358,51 +380,60 @@ func (s *campaignService) ResolveRound(
 		}
 	}
 
-	var enemyAction *domain.Action
-	enemyResolved := ResolvedAction{}
-	if enemyActionID != "" {
-		ea, err := s.actionService.GetActionDetails(ctx, enemyActionID)
-		if err != nil {
-			return nil, fmt.Errorf("enemy action details: %w", err)
-		}
-		enemyAction = &ea
-
-		enemyResolved, err = s.resolveAction(ea, enemyStats.Attack)
-		if err != nil {
-			return nil, fmt.Errorf("resolve enemy action: %w", err)
-		}
-	}
-
-	// Turn order
+	// ===== TURN ORDER =====
 
 	playerFirst := s.engineService.ResolveTurnOrder(
 		playerStats.Speed,
 		enemyStats.Speed,
 	)
 
-	// Damage
+	// ===== DAMAGE =====
 
 	playerDamage := 0
 	if playerResolved.isOffensive && playerResolved.hit {
-		playerDamage = s.applyDamage(playerResolved.raw, enemyStats.Defence, enemyResolved.block)
+		playerDamage = s.applyDamage(
+			playerResolved.raw,
+			enemyStats.Defence,
+			enemyResolved.block,
+		)
 	}
 
 	enemyDamage := 0
 	if enemyResolved.isOffensive && enemyResolved.hit {
-		enemyDamage = s.applyDamage(enemyResolved.raw, playerStats.Defence, playerResolved.block)
+		enemyDamage = s.applyDamage(
+			enemyResolved.raw,
+			playerStats.Defence,
+			playerResolved.block,
+		)
 	}
+
+	// ===== APPLY =====
 
 	playerHP := currentFight.PlayerCurrentHP
 	enemyHP := currentFight.EnemyCurrentHP
 
+	playerMoved := false
+	enemyMoved := false
+
 	if playerFirst {
-		enemyHP -= playerDamage
-		if enemyHP > 0 {
+		if !playerSkip {
+			playerMoved = true
+			enemyHP -= playerDamage
+		}
+
+		if enemyHP > 0 && !enemySkip {
+			enemyMoved = true
 			playerHP -= enemyDamage
 		}
+
 	} else {
-		playerHP -= enemyDamage
-		if playerHP > 0 {
+		if !enemySkip {
+			enemyMoved = true
+			playerHP -= enemyDamage
+		}
+
+		if playerHP > 0 && !playerSkip {
+			playerMoved = true
 			enemyHP -= playerDamage
 		}
 	}
@@ -410,7 +441,7 @@ func (s *campaignService) ResolveRound(
 	playerHP = s.engineService.ClampHP(playerHP)
 	enemyHP = s.engineService.ClampHP(enemyHP)
 
-	// ===== LOG BUILDING =====
+	// ===== LOGS =====
 
 	playerLog := buildActorLog(
 		"Player",
@@ -422,7 +453,7 @@ func (s *campaignService) ResolveRound(
 
 	enemyLog := buildActorLog(
 		"Enemy",
-		enemyAction == nil,
+		enemySkip,
 		func() domain.Action {
 			if enemyAction != nil {
 				return *enemyAction
@@ -435,37 +466,40 @@ func (s *campaignService) ResolveRound(
 
 	roundLog := buildRoundLog(playerLog, enemyLog, playerFirst)
 
-	// ===== STATE UPDATE =====
+	// ===== STATE =====
 
 	currentFight.PlayerCurrentHP = playerHP
 	currentFight.EnemyCurrentHP = enemyHP
 
 	if playerSkip {
-		currentFight.PlayerCurrentActionPoint = s.applyAPChange(
+		currentFight.PlayerCurrentActionPoint = s.regenAP(
 			currentFight.PlayerCurrentActionPoint,
 			currentFight.PlayerMaxActionPoint,
-			0,
-			false,
+			20,
 		)
-	} else {
-		currentFight.PlayerCurrentActionPoint = s.applyAPChange(
+	} else if playerMoved {
+		currentFight.PlayerCurrentActionPoint = s.spendAP(
 			currentFight.PlayerCurrentActionPoint,
-			currentFight.PlayerMaxActionPoint,
 			int(playerAction.ActionWeight),
-			playerAction.Type == ActionDefensive,
 		)
 	}
 
-	if enemyAction != nil {
-		currentFight.EnemyCurrentActionPoint = s.applyAPChange(
+	if enemySkip {
+		currentFight.EnemyCurrentActionPoint = s.regenAP(
 			currentFight.EnemyCurrentActionPoint,
 			currentFight.EnemyMaxActionPoint,
+			20,
+		)
+	} else if enemyMoved && enemyAction != nil {
+		currentFight.EnemyCurrentActionPoint = s.spendAP(
+			currentFight.EnemyCurrentActionPoint,
 			int(enemyAction.ActionWeight),
-			enemyAction.Type == ActionDefensive,
 		)
 	}
 
 	currentFight.RoundNumber++
+
+	// ===== END CONDITIONS =====
 
 	if playerHP == 0 {
 		currentFight.Status = domain.FightStatusPlayerLost
@@ -478,7 +512,7 @@ func (s *campaignService) ResolveRound(
 		return nil, fmt.Errorf("update fight: %w", err)
 	}
 
-	// Session handling
+	// ===== SESSION =====
 
 	sessionCompleted := false
 
@@ -557,6 +591,11 @@ func (s *campaignService) StartNextFight(ctx context.Context, userID string, ses
 	enemyStats, err := s.creatureService.GetStats(ctx, nextEnemyID)
 	if err != nil {
 		return nil, fmt.Errorf("enemy stats: %w", err)
+	}
+	currentSession.CurrentActionPoint = s.regenAP(currentSession.CurrentActionPoint, currentSession.MaxActionPoint, 50)
+
+	if err = s.repo.UpdateSession(ctx, tx, currentSession); err != nil {
+		return nil, fmt.Errorf("update session AP regen: %w", err)
 	}
 
 	newFight := domain.NewFight(domain.CreateFightInput{
@@ -637,7 +676,11 @@ func (s *campaignService) createFight(ctx context.Context, tx *sql.Tx, session *
 	return &fight, nil
 }
 
-func (s *campaignService) resolveAction(action domain.Action, sourceAttack int) (ResolvedAction, error) {
+func (s *campaignService) resolveAction(
+	action domain.Action,
+	sourceAttack int,
+) (ResolvedAction, error) {
+
 	hit, err := s.engineService.RollAccuracy(AccuracyInput{
 		Accuracy: action.Accuracy,
 	})
@@ -657,7 +700,7 @@ func (s *campaignService) resolveAction(action domain.Action, sourceAttack int) 
 	}
 
 	block := 0.0
-	if action.Type == ActionDefensive {
+	if action.Type == ActionDefensive && hit {
 		block = action.Multiplier
 	}
 
@@ -685,31 +728,27 @@ func (s *campaignService) applyDamage(
 	return final
 }
 
-func (s *campaignService) applyAPChange(
+func (s *campaignService) spendAP(
 	currentAP int,
-	maxAP int,
 	actionWeight int,
-	isDefensive bool,
 ) int {
-
-	// spend
 	currentAP -= actionWeight
 
-	// regen %
-	regenPercent := 20
-	if isDefensive {
-		regenPercent = regenPercent / 2
-	}
-
-	regen := (maxAP * regenPercent) / 100
-	currentAP += regen
-
-	// clamp lower
 	if currentAP < 0 {
 		currentAP = 0
 	}
 
-	// clamp upper
+	return currentAP
+}
+
+func (s *campaignService) regenAP(
+	currentAP int,
+	maxAP int,
+	percent int,
+) int {
+	regen := (maxAP * percent) / 100
+	currentAP += regen
+
 	if currentAP > maxAP {
 		currentAP = maxAP
 	}
@@ -717,26 +756,73 @@ func (s *campaignService) applyAPChange(
 	return currentAP
 }
 
-func buildActorLog(actor string, skip bool, action domain.Action, resolved ResolvedAction, aliveAfter bool) actorLog {
+func buildActorLog(
+	actor string,
+	skip bool,
+	action domain.Action,
+	resolved ResolvedAction,
+	targetAliveAfter bool,
+) actorLog {
+
+	lowerActor := strings.ToLower(actor)
+
 	if skip {
 		return actorLog{
-			lines:       []string{actor + " skipped"},
+			lines: []RoundLogEntry{
+				{
+					Text:   actor + " skipped",
+					Effect: lowerActor + "_skip",
+				},
+			},
 			isDefensive: false,
 			skipped:     true,
-			aliveAfter:  aliveAfter,
+			aliveAfter:  true,
 		}
 	}
 
-	lines := []string{fmt.Sprintf("%s used %s", actor, action.Name)}
+	lines := []RoundLogEntry{}
 
-	if resolved.isOffensive && !resolved.hit {
-		lines = append(lines, "The move missed")
+	switch action.Type {
+
+	case ActionDefensive:
+		lines = append(lines, RoundLogEntry{
+			Text:   fmt.Sprintf("%s used %s", actor, action.Name),
+			Effect: lowerActor + "_defend",
+		})
+
+		if !resolved.hit {
+			lines = append(lines, RoundLogEntry{
+				Text:   fmt.Sprintf("%s's move failed", actor),
+				Effect: lowerActor + "_miss",
+			})
+		}
+
+	case ActionOffensive:
+		lines = append(lines, RoundLogEntry{
+			Text:   fmt.Sprintf("%s used %s", actor, action.Name),
+			Effect: lowerActor + "_attack",
+		})
+
+		if resolved.hit {
+			target := oppositeActor(lowerActor)
+
+			lines = append(lines, RoundLogEntry{
+				Text:   "",
+				Effect: target + "_hit",
+			})
+		} else {
+			lines = append(lines, RoundLogEntry{
+				Text:   "The move missed",
+				Effect: lowerActor + "_miss",
+			})
+		}
 	}
+
 	return actorLog{
 		lines:       lines,
 		isDefensive: action.Type == ActionDefensive,
 		skipped:     false,
-		aliveAfter:  aliveAfter,
+		aliveAfter:  targetAliveAfter,
 	}
 }
 
@@ -744,35 +830,26 @@ func buildRoundLog(
 	player actorLog,
 	enemy actorLog,
 	playerFirst bool,
-) []string {
+) []RoundLogEntry {
 
-	var log []string
+	var log []RoundLogEntry
 
-	appendWithDefeat := func(al actorLog, opponent actorLog, actorName string) {
+	appendActor := func(
+		al actorLog,
+		opponent actorLog,
+		defeatedActor string,
+	) {
 		log = append(log, al.lines...)
 
-		// If opponent died after this action → log defeat immediately
 		if !opponent.aliveAfter {
-			log = append(log, fmt.Sprintf("%s was defeated", actorName))
+			log = append(log, RoundLogEntry{
+				Text:   defeatedActor + " was defeated",
+				Effect: strings.ToLower(defeatedActor) + "_defeated",
+			})
 		}
 	}
 
-	// ---- Defensive phase ----
-	if player.isDefensive && enemy.isDefensive {
-		if playerFirst {
-			appendWithDefeat(player, enemy, "Enemy")
-			if enemy.aliveAfter {
-				appendWithDefeat(enemy, player, "Player")
-			}
-		} else {
-			appendWithDefeat(enemy, player, "Player")
-			if player.aliveAfter {
-				appendWithDefeat(player, enemy, "Enemy")
-			}
-		}
-		return log
-	}
-
+	// Defensive actions always display first
 	if player.isDefensive {
 		log = append(log, player.lines...)
 	}
@@ -780,26 +857,33 @@ func buildRoundLog(
 		log = append(log, enemy.lines...)
 	}
 
-	// ---- Offensive phase ----
-	if !player.isDefensive && !enemy.isDefensive {
-		if playerFirst {
-			appendWithDefeat(player, enemy, "Enemy")
-			if enemy.aliveAfter {
-				appendWithDefeat(enemy, player, "Player")
-			}
-		} else {
-			appendWithDefeat(enemy, player, "Player")
-			if player.aliveAfter {
-				appendWithDefeat(player, enemy, "Enemy")
-			}
+	// Then offensive/skip actions in turn order
+	if playerFirst {
+		if !player.isDefensive {
+			appendActor(player, enemy, "Enemy")
 		}
-	} else if !player.isDefensive {
-		appendWithDefeat(player, enemy, "Enemy")
-	} else if !enemy.isDefensive {
-		appendWithDefeat(enemy, player, "Player")
+
+		if enemy.aliveAfter && !enemy.isDefensive {
+			appendActor(enemy, player, "Player")
+		}
+	} else {
+		if !enemy.isDefensive {
+			appendActor(enemy, player, "Player")
+		}
+
+		if player.aliveAfter && !player.isDefensive {
+			appendActor(player, enemy, "Enemy")
+		}
 	}
 
 	return log
+}
+
+func oppositeActor(actor string) string {
+	if actor == "player" {
+		return "enemy"
+	}
+	return "player"
 }
 
 func (s *campaignService) GetCampaignOutro(

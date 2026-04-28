@@ -18,6 +18,9 @@ export type CampaignTemplate = {
     name: string
     description: string
     status: string
+    imageUrl: string
+    outroText: string
+    outroImage: string
 }
 
 
@@ -65,10 +68,15 @@ export type StartCampaignResponse = {
 export type ResolveActionResponse = {
     fight: Fight
     campaignSessionCompleted: boolean
-    roundLog: string[]
+    roundLog: RoundLogEntry[]
 }
 
 export type CampaignOutroData = {
     outroImage: string;
     outroText: string;
 }
+
+export type RoundLogEntry = {
+    text: string;
+    effect: string;
+};

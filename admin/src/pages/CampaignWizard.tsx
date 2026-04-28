@@ -5,6 +5,9 @@ import api from "../api/interceptor/axios";
 type CampaignDetails = {
   name: string;
   description: string;
+  imageUrl: string;
+  outroText: string;
+  outroImage: string;
   status: "inactive" | "active";
 };
 
@@ -20,7 +23,7 @@ type Creature = {
 
 const STORAGE_KEY = "campaign_wizard";
 
-const defaultDetails: CampaignDetails = { name: "", description: "", status: "inactive" };
+const defaultDetails: CampaignDetails = { name: "", description: "", imageUrl: "", outroText: "", outroImage: "", status: "inactive" };
 
 function loadSaved() {
   try {
@@ -195,6 +198,28 @@ function CampaignDetailsStep({
         rows={3}
         value={value.description}
         onChange={(e) => onChange({ ...value, description: e.target.value })}
+      />
+
+      <input
+        className="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
+        placeholder="Image URL"
+        value={value.imageUrl}
+        onChange={(e) => onChange({ ...value, imageUrl: e.target.value })}
+      />
+
+      <textarea
+        className="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
+        placeholder="Outro Text"
+        rows={2}
+        value={value.outroText}
+        onChange={(e) => onChange({ ...value, outroText: e.target.value })}
+      />
+
+      <input
+        className="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
+        placeholder="Outro Image URL"
+        value={value.outroImage}
+        onChange={(e) => onChange({ ...value, outroImage: e.target.value })}
       />
 
       <select
