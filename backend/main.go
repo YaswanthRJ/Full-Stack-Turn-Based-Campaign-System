@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres" // Add this
-	_ "github.com/golang-migrate/migrate/v4/source/file"       // Add this
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq" // Add this for the database/sql driver
+	_ "github.com/lib/pq"
 )
 
 func main() {
