@@ -10,12 +10,6 @@ CREATE TABLE user_analytics (
     victories INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE user_campaign_completions (
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-    campaign_template_id TEXT REFERENCES campaign_templates(id) ON DELETE CASCADE,
-    completed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, campaign_template_id)
-);
 
 CREATE TABLE actions(
     id TEXT PRIMARY KEY,
@@ -79,6 +73,14 @@ CREATE TABLE campaign_stages (
     enemy_creature_id TEXT REFERENCES creatures(id) ON DELETE CASCADE,
     PRIMARY KEY (campaign_template_id, stage_index)
 );
+
+CREATE TABLE user_campaign_completions (
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    campaign_template_id TEXT REFERENCES campaign_templates(id) ON DELETE CASCADE,
+    completed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, campaign_template_id)
+);
+
 
 CREATE INDEX idx_creatures_is_playable ON creatures(is_playable);
 CREATE INDEX idx_creature_actions_action_id ON creature_actions(action_id);
