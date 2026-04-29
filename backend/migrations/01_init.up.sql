@@ -1,6 +1,20 @@
 CREATE TABLE users (
     id TEXT PRIMARY KEY, 
+    username TEXT UNIQUE,
+    password_hash TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE user_analytics (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    fights INTEGER NOT NULL DEFAULT 0,
+    victories INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE user_campaign_completions (
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    campaign_template_id TEXT REFERENCES campaign_templates(id) ON DELETE CASCADE,
+    completed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, campaign_template_id)
 );
 
 CREATE TABLE actions(

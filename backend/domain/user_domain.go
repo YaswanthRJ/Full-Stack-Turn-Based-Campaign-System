@@ -1,5 +1,7 @@
 package domain
 
 type User struct {
-	ID string
+	ID           string
+	Username     *string
+	PasswordHash *string
 }
