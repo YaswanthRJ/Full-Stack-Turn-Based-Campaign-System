@@ -7,7 +7,7 @@ export function useStartCampaign() {
     const navigate = useNavigate();
     const { setState } = useGame();
 
-    async function begin(campaignId: string, creatureId: string) {
+    async function begin(campaignId: any, creatureId: any) {
         try {
             // start campaign → returns fight
             const res = await startCampaign(campaignId, creatureId);
