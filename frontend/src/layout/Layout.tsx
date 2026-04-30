@@ -17,16 +17,16 @@ export function Layout() {
           </p>
         </div>
       </div>
-      <div className="flex flex-col md:hidden min-h-screen justify-center items-center bg-black">
+      <div className="flex flex-col md:hidden min-h-screen justify-center items-center">
           <header className="w-full">
             <Header onMenuClick={()=>setSideBarOpen(true)}/>
           </header>
           <UserMenu open={sideBarOpen} onClose={()=>setSideBarOpen(false)}/>
-        <div className="w-full max-w-lg overflow-hidden flex-1 p-4 bg-purple-200">
+        <div className="w-full max-w-3xl overflow-hidden flex-1  "style={{ background: "linear-gradient(180deg, #06000f 0%, #0d001f 100%)" }}>
           <Outlet />
         </div>
         <div>
-          <footer>Hello</footer>
+          
         </div>
       </div>
     </>

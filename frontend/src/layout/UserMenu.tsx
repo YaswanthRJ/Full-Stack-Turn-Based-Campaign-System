@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 type UserMenuProps = {
   open: boolean;
@@ -20,40 +21,57 @@ export function UserMenu({ open, onClose }: UserMenuProps) {
     };
   }, [open, onClose]);
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/40 flex justify-end"
-      onClick={onClose} // click outside closes
-    >
-      <div
-        className="w-64 h-full bg-white shadow-lg p-4"
-        onClick={(e) => e.stopPropagation()} // prevent close when clicking inside
-      >
-        <div className="flex justify-end">
-          <button onClick={onClose} className="p-2" aria-label="Close menu">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              className="w-6 h-6"
-            >
-              <path d="M6 6l12 12" />
-              <path d="M18 6L6 18" />
-            </svg>
-          </button>
-        </div>
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-50 bg-black/50 flex justify-end"
+          onClick={onClose}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="w-64 h-full p-4 text-white"
+            onClick={(e) => e.stopPropagation()}
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 120 }}
+            style={{
+              background:
+                "linear-gradient(180deg, #5b21b6, #86198f, #3730a3)",
+            }}
+          >
+            {/* Close */}
+            <div className="flex justify-end">
+              <button
+                onClick={onClose}
+                className="p-2 hover:rotate-90 transition"
+              >
+                ✕
+              </button>
+            </div>
 
-        <div className="mt-4 space-y-3">
-          <button className="w-full text-left">Profile</button>
-          <button className="w-full text-left">Stats</button>
-          <button className="w-full text-left">Settings</button>
-        </div>
-      </div>
-    </div>
+            {/* Menu */}
+            <div className="mt-6 space-y-4">
+              {["Profile", "Stats", "Settings"].map((item) => (
+                <motion.button
+                  key={item}
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full text-left px-3 py-2 rounded-lg 
+                  bg-white/10 hover:bg-white/20 
+                  hover:shadow-[0_0_10px_rgba(255,255,255,0.3)]
+                  transition"
+                >
+                  {item}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
