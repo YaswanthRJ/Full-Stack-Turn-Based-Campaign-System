@@ -9,7 +9,17 @@ import { resolveAction } from "../service/campaign.service";
 import { LogBox } from "../components/LogBox";
 import type { Fight, RoundLogEntry } from "../types/campaign.types";
 
-
+type AnimEvent =
+  | "player_move"
+  | "enemy_move"
+  | "player_hit"
+  | "enemy_hit"
+  | "player_miss"
+  | "enemy_miss"
+  | "player_skip"
+  | "enemy_skip"
+  | "player_defeated"
+  | "enemy_defeated";
 
 export function Game() {
   useGameInitializer();
@@ -20,13 +30,8 @@ export function Game() {
   const [submitting, setSubmitting] = useState(false);
   const [lines, setLines] = useState<RoundLogEntry[]>([]);
   const [visualFight, setVisualFight] = useState<Fight | null>(state.fight);
-  const [eventAnim, setEventAnim] = useState<null | {
-    type: "player_attack" | "enemy_attack" | "player_miss" | "enemy_miss";
-  }>(null);
-  const [visualState, setVisualState] = useState({
-    playerDefending: false,
-    enemyDefending: false,
-  });
+
+  const [eventAnim, setEventAnim] = useState<AnimEvent | null>(null);
 
   useEffect(() => {
     setVisualFight(state.fight);
@@ -62,10 +67,12 @@ export function Game() {
   async function handleAction(actionId: string) {
     if (submitting || playing.current || !fight) return;
     setSubmitting(true);
+
     try {
       const res = await resolveAction(fight.id, actionId);
       pendingResult.current = res;
       playing.current = true;
+
       setVisualFight(fight);
       setLines(res.roundLog);
     } catch (err) {
@@ -79,17 +86,19 @@ export function Game() {
   function handleLogDone() {
     const res = pendingResult.current;
     if (!res) return;
+
     setState((prev) => ({
       ...prev,
       fight: res.fight,
       campaignCompleted: res.campaignSessionCompleted,
     }));
+
     playing.current = false;
     setLines([]);
     setSubmitting(false);
     pendingResult.current = null;
-    setVisualState({ playerDefending: false, enemyDefending: false });
     setEventAnim(null);
+
     if (res.fight.status !== "active") {
       setTimeout(() => navigate("/result"), 400);
     }
@@ -99,45 +108,54 @@ export function Game() {
     setVisualFight((current) => {
       if (!current) return current;
       const next = { ...current };
+
+      // AP updates
       switch (effect) {
-        case "player_attack":
-        case "player_defend":
+        case "player_move":
+        case "player_skip":
           next.playerCurrentActionPoint = finalFight.playerCurrentActionPoint;
           break;
-        case "enemy_attack":
-        case "enemy_defend":
+
+        case "enemy_move":
+        case "enemy_skip":
           next.enemyCurrentActionPoint = finalFight.enemyCurrentActionPoint;
           break;
       }
+
+      // HP updates
       switch (effect) {
-        case "enemy_hit":
-          next.enemyCurrentHp = finalFight.enemyCurrentHp;
-          break;
         case "player_hit":
           next.playerCurrentHp = finalFight.playerCurrentHp;
           break;
+
+        case "enemy_hit":
+          next.enemyCurrentHp = finalFight.enemyCurrentHp;
+          break;
       }
+
       return next;
     });
 
-    setVisualState((s) => {
-      switch (effect) {
-        case "player_defend": return { ...s, playerDefending: true };
-        case "enemy_defend": return { ...s, enemyDefending: true };
-        case "player_miss": return { ...s, playerDefending: false };
-        case "enemy_miss": return { ...s, enemyDefending: false };
-        default: return s;
-      }
-    });
+    // animation trigger
+    const allowed: AnimEvent[] = [
+      "player_move",
+      "enemy_move",
+      "player_hit",
+      "enemy_hit",
+      "player_miss",
+      "enemy_miss",
+      "player_skip",
+      "enemy_skip",
+      "player_defeated",
+      "enemy_defeated",
+    ];
 
-    switch (effect) {
-      case "player_attack": setEventAnim({ type: "player_attack" }); break;
-      case "enemy_attack": setEventAnim({ type: "enemy_attack" }); break;
-      case "player_miss": setEventAnim({ type: "player_miss" }); break;
-      case "enemy_miss": setEventAnim({ type: "enemy_miss" }); break;
-    }
-    if (effect.includes("attack") || effect.includes("miss")) {
-      setTimeout(() => setEventAnim(null), 300);
+    if (allowed.includes(effect as AnimEvent)) {
+      setEventAnim(effect as AnimEvent);
+
+      setTimeout(() => {
+        setEventAnim(null);
+      }, 700);
     }
   }
 
@@ -146,17 +164,14 @@ export function Game() {
       className="flex flex-col h-full overflow-hidden"
       style={{ background: "#06000f" }}
     >
-     
-      {/* ── BOTTOM PANEL (dark purple UI) ─────── */}
       <div
         className="flex flex-col gap-2 p-3 flex-1 overflow-auto"
         style={{
-          background:
-            "linear-gradient(180deg, #0a0018 0%, #0d001f 100%)",
+          background: "linear-gradient(180deg, #0a0018 0%, #0d001f 100%)",
           borderTop: "2px solid #7c3aed44",
         }}
       >
-        {/* Enemy stat card */}
+        {/* Enemy */}
         <CreatureCard
           name={state.enemy.name}
           hpCurrent={visualFight.enemyCurrentHp}
@@ -165,10 +180,10 @@ export function Game() {
           apMax={visualFight.enemyMaxActionPoint}
           imageUrl={state.enemy.imageUrl}
           isEnemy
-          isDefending={visualState.enemyDefending}
+          anim={eventAnim}
         />
 
-        {/* Player stat card */}
+        {/* Player */}
         <CreatureCard
           name={state.player.name}
           hpCurrent={visualFight.playerCurrentHp}
@@ -176,10 +191,10 @@ export function Game() {
           apCurrent={visualFight.playerCurrentActionPoint}
           apMax={visualFight.playerMaxActionPoint}
           imageUrl={state.player.imageUrl}
-          isDefending={visualState.playerDefending}
+          anim={eventAnim}
         />
 
-        {/* Log box */}
+        {/* Log */}
         <LogBox
           logs={lines}
           onStep={(entry) => {
