@@ -41,8 +41,8 @@ export function CreatureCard({
   const hpColor =
     hpPct > 60 ? "#a855f7" : hpPct > 30 ? "#eab308" : "#ef4444";
 
-  const apColor =
-    (apCurrent / Math.max(apMax, 1)) * 100 > 60 ? "#818cf8" : "#f97316";
+  const apPct = (apCurrent / Math.max(apMax, 1)) * 100;
+  const apColor = apPct > 60 ? "#818cf8" : "#f97316";
 
   const isTarget =
     (anim?.startsWith("enemy_") && isEnemy) ||
@@ -55,29 +55,32 @@ export function CreatureCard({
     <motion.div
       initial={{ opacity: 0, x: isEnemy ? 40 : -40 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
       className={`relative flex ${
         isEnemy ? "flex-row-reverse" : "flex-row"
-      } items-center gap-3 px-3 py-2 rounded-2xl border border-purple-700/40 shadow-lg`}
+      } items-center gap-4 px-4 py-3 rounded-2xl`}
       style={{
-        background:
-          "linear-gradient(135deg, #0d0015 0%, #1a0030 60%, #0a001a 100%)",
-        boxShadow: "0 4px 24px #7c3aed22",
+        background: isEnemy
+          ? "linear-gradient(135deg, #0b0015 0%, #0a102a 60%, #070018 100%)"
+          : "linear-gradient(135deg, #0d0015 0%, #1a0030 60%, #0a001a 100%)",
+        border: isEnemy ? "1px solid #60a5fa33" : "1px solid #7c3aed55",
+        boxShadow: isEnemy ? "0 4px 24px #60a5fa22" : "0 4px 24px #7c3aed22",
       }}
     >
       {/* Sprite */}
       <div className="relative shrink-0">
         <motion.div
-          className="w-20 h-20 rounded-xl overflow-hidden border-2 border-purple-600/50"
+          className="w-24 h-24 rounded-xl overflow-hidden border-2"
           style={{
+            borderColor: isEnemy ? "#60a5fa44" : "#7c3aed55",
             background:
               "radial-gradient(circle at 40% 40%, #2e0060 0%, #0d0015 100%)",
-            boxShadow: "0 0 12px #7c3aed44",
+            boxShadow: isEnemy ? "0 0 14px #60a5fa33" : "0 0 14px #7c3aed44",
           }}
           animate={{
             opacity: isHit || isMiss ? 0.35 : 1,
           }}
-          transition={{ duration: 0.25 }}
+          transition={{ duration: 0.2 }}
         >
           {imageUrl ? (
             <img
@@ -103,7 +106,7 @@ export function CreatureCard({
               initial={{ opacity: 0, scale: 0.7, y: 6 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.85, y: -6 }}
-              transition={{ duration: 0.35 }}
+              transition={{ duration: 0.3 }}
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
             >
               <div
@@ -126,8 +129,16 @@ export function CreatureCard({
         </AnimatePresence>
 
         {/* Level badge */}
-        {level && (
-          <div className="absolute -bottom-1 -right-1 bg-purple-700 border border-purple-400 rounded-md px-1.5 text-[8px] font-black text-white tracking-wide">
+        {level !== undefined && level !== null && (
+          <div
+            className="absolute -bottom-1 -right-1 rounded-md px-1.5 text-[8px] font-black text-white tracking-wide"
+            style={{
+              background: isEnemy
+                ? "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)"
+                : "linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%)",
+              border: "1px solid #ffffff22",
+            }}
+          >
             Lv{level}
           </div>
         )}
@@ -139,20 +150,9 @@ export function CreatureCard({
           isEnemy ? "items-end" : "items-start"
         }`}
       >
-        <div
-          className={`flex items-center gap-1.5 w-full ${
-            isEnemy ? "flex-row-reverse" : "flex-row"
-          }`}
-        >
-          <span className="text-white font-black text-sm tracking-wide truncate uppercase">
-            {name}
-          </span>
-          {isEnemy && (
-            <span className="text-purple-400 text-[9px] font-bold tracking-widest shrink-0">
-              FOE
-            </span>
-          )}
-        </div>
+        <span className="text-white font-black text-sm tracking-wide truncate uppercase">
+          {name}
+        </span>
 
         <StatBar current={hpCurrent} max={hpMax} color={hpColor} label="HP" />
         <StatBar current={apCurrent} max={apMax} color={apColor} label="AP" />

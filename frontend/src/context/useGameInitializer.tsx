@@ -11,43 +11,41 @@ export function useGameInitializer() {
     if (initialized.current) return;
     initialized.current = true;
 
+    // Already in fight — nothing to do
+    if (state.phase === "fight") return;
+
     async function init() {
+      setState({ phase: "loading" });
+
       try {
-        // If fight already exists → only ensure actions
-        if (state.fight && state.actions.length > 0) return;
-
-        setState((prev) => ({ ...prev, loading: true }));
-
-        // Recover session from backend
         const res = await getSession();
 
-        if (!res.currentSession) {
-          setState((prev) => ({ ...prev, loading: false }));
+        if (!res.currentSession || !res.currentFight) {
+          setState({ phase: "idle" });
           return;
         }
 
         const creatureId = res.currentSession.playerCreatureId;
+        const [actions, player, enemy] = await Promise.all([
+          getCreatureActions(creatureId),
+          getCreature(creatureId),
+          getCreature(res.currentFight.enemyCreatureId),
+        ]);
 
-        // Fetch actions
-        const actions = await getCreatureActions(creatureId);
-
-        //fetch creatures
-        const player = await getCreature(creatureId)
-        const enemy = await getCreature(res.currentFight.enemyCreatureId)
         setState({
-          sessionId: res.currentSession.id,
-          creatureId,
+          phase: "fight",
+          session: {
+            sessionId: res.currentSession.id,
+            creatureId,
+            player,
+            enemy,
+            actions,
+          },
           fight: res.currentFight,
-          actions,
-          player,
-          enemy,
-          loading: false,
-          campaignCompleted: false,
         });
       } catch (err) {
         console.error("Game init failed:", err);
-
-        setState((prev) => ({ ...prev, loading: false }));
+        setState({ phase: "idle" });
       }
     }
 

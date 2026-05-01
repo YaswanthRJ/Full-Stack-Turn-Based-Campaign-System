@@ -4,9 +4,8 @@ import { Home } from "./pages/Home";
 import { Campaigns } from "./pages/Campaigns";
 import { Creatures } from "./pages/Creatures";
 import { GameProvider } from "./context/GameProvider";
-import { Game } from "./pages/Game";
-import { Result } from "./pages/Result";
 import { AuthProvider } from "./context/AuthProvider";
+import { GameScreen } from "./pages/GameScreen";
 
 function App() {
   return (
@@ -17,8 +16,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/campaigns" element={<Campaigns />} />
             <Route path="/creatures/:campaignId" element={<Creatures />} />
-            <Route path="game" element={<Game />} />
-            <Route path="result" element={<Result />} />
+            <Route  path="/game"  element= {<GameScreen /> } />
           </Route>
         </Routes>
       </GameProvider>

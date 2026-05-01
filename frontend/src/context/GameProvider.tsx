@@ -2,17 +2,34 @@ import { createContext, useContext, useState } from "react";
 import type { Fight } from "../types/campaign.types";
 import type { Action } from "../types/action.types";
 import type { Creature } from "../types/creature.types";
+import type { CampaignOutroData } from "../types/campaign.types";
 
-type GameState = {
-  sessionId: string | null;
-  creatureId: string | null;
-  fight: Fight | null;
+// ── Shared session data (available in fight + result) ──────────────────────
+
+type SessionData = {
+  sessionId: string;
+  creatureId: string;
+  player: Creature;
+  enemy: Creature;
   actions: Action[];
-  player: Creature | null;
-  enemy: Creature | null;
-  loading: boolean;
-  campaignCompleted: boolean;
 };
+
+// ── Result payload — server decides everything ─────────────────────────────
+
+export type ResultData = {
+  fight: Fight;
+  outcome: "player_won" | "player_defeated";
+  campaignCompleted: boolean;
+  outro: CampaignOutroData | null; // fetched async, starts null
+};
+
+// ── Discriminated union — each phase owns exactly its data ─────────────────
+
+export type GameState =
+  | { phase: "idle" }
+  | { phase: "loading" }
+  | { phase: "fight"; session: SessionData; fight: Fight }
+  | { phase: "result"; session: SessionData; result: ResultData };
 
 type GameContextType = {
   state: GameState;
@@ -23,29 +40,11 @@ type GameContextType = {
 const GameContext = createContext<GameContextType | null>(null);
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<GameState>({
-    sessionId: null,
-    creatureId: null,
-    fight: null,
-    actions: [],
-    player: null,
-    enemy: null,
-    loading: false,
-    campaignCompleted: false,
-  });
+  const [state, setState] = useState<GameState>({ phase: "idle" });
 
   function reset() {
     localStorage.removeItem("sessionId");
-    setState({
-      sessionId: null,
-      creatureId: null,
-      fight: null,
-      actions: [],
-      player: null,
-      enemy: null,
-      loading: false,
-      campaignCompleted: false,
-    });
+    setState({ phase: "idle" });
   }
 
   return (

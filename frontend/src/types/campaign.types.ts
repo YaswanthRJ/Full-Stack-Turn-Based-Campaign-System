@@ -56,7 +56,7 @@ export type CurrentStateResponse = {
 
 export type CurrentState = {
     currentSession: CampaignSession | null;
-    currentFight: Fight | null;
+    currentFight: Fight;
 };
 
 export type StartCampaignResponse = {
