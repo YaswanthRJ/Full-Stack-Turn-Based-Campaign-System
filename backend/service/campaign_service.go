@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 )
 
 type CampaignService interface {
@@ -317,6 +316,18 @@ func (s *campaignService) ResolveRound(
 		}
 	}
 
+	// ===== FETCH CREATURE DETAILS (FOR NAMES) =====
+
+	playerCreature, err := s.creatureService.GetCreatureDetails(ctx, playerCreatureID)
+	if err != nil {
+		return nil, fmt.Errorf("get player creature: %w", err)
+	}
+
+	enemyCreature, err := s.creatureService.GetCreatureDetails(ctx, currentFight.EnemyCreatureID)
+	if err != nil {
+		return nil, fmt.Errorf("get enemy creature: %w", err)
+	}
+
 	// ===== FETCH STATS =====
 
 	playerStats, err := s.creatureService.GetStats(ctx, playerCreatureID)
@@ -444,7 +455,8 @@ func (s *campaignService) ResolveRound(
 	// ===== LOGS =====
 
 	playerLog := buildActorLog(
-		"Player",
+		"player",
+		playerCreature.Name,
 		playerSkip,
 		playerAction,
 		playerResolved,
@@ -452,7 +464,8 @@ func (s *campaignService) ResolveRound(
 	)
 
 	enemyLog := buildActorLog(
-		"Enemy",
+		"enemy",
+		enemyCreature.Name,
 		enemySkip,
 		func() domain.Action {
 			if enemyAction != nil {
@@ -464,7 +477,7 @@ func (s *campaignService) ResolveRound(
 		enemyHP > 0,
 	)
 
-	roundLog := buildRoundLog(playerLog, enemyLog, playerFirst)
+	roundLog := buildRoundLog(playerLog, enemyLog, playerFirst, playerCreature.Name, enemyCreature.Name)
 
 	// ===== STATE =====
 
@@ -757,21 +770,20 @@ func (s *campaignService) regenAP(
 }
 
 func buildActorLog(
-	actor string,
+	actorKey string, // "player" or "enemy" (ONLY for effect naming)
+	actorName string, // actual creature name (ONLY for text)
 	skip bool,
 	action domain.Action,
 	resolved ResolvedAction,
 	targetAliveAfter bool,
 ) actorLog {
 
-	lowerActor := strings.ToLower(actor)
-
 	if skip {
 		return actorLog{
 			lines: []RoundLogEntry{
 				{
-					Text:   actor + " skipped",
-					Effect: lowerActor + "_skip",
+					Text:   actorName + " skipped",
+					Effect: actorKey + "_skip",
 				},
 			},
 			isDefensive: false,
@@ -782,40 +794,33 @@ func buildActorLog(
 
 	lines := []RoundLogEntry{}
 
-	switch action.Type {
+	// Move event always first
+	lines = append(lines, RoundLogEntry{
+		Text:   fmt.Sprintf("%s used %s", actorName, action.Name),
+		Effect: actorKey + "_move",
+	})
 
-	case ActionDefensive:
+	// If action failed
+	if !resolved.hit {
 		lines = append(lines, RoundLogEntry{
-			Text:   fmt.Sprintf("%s used %s", actor, action.Name),
-			Effect: lowerActor + "_defend",
+			Text:   fmt.Sprintf("%s's move missed", actorName),
+			Effect: actorKey + "_miss",
 		})
-
-		if !resolved.hit {
-			lines = append(lines, RoundLogEntry{
-				Text:   fmt.Sprintf("%s's move failed", actor),
-				Effect: lowerActor + "_miss",
-			})
+		return actorLog{
+			lines:       lines,
+			isDefensive: action.Type == ActionDefensive,
+			skipped:     false,
+			aliveAfter:  targetAliveAfter,
 		}
+	}
 
-	case ActionOffensive:
+	// Offensive hit reaction
+	if action.Type == ActionOffensive {
+		target := oppositeActor(actorKey)
 		lines = append(lines, RoundLogEntry{
-			Text:   fmt.Sprintf("%s used %s", actor, action.Name),
-			Effect: lowerActor + "_attack",
+			Text:   "",
+			Effect: target + "_hit",
 		})
-
-		if resolved.hit {
-			target := oppositeActor(lowerActor)
-
-			lines = append(lines, RoundLogEntry{
-				Text:   "",
-				Effect: target + "_hit",
-			})
-		} else {
-			lines = append(lines, RoundLogEntry{
-				Text:   "The move missed",
-				Effect: lowerActor + "_miss",
-			})
-		}
 	}
 
 	return actorLog{
@@ -830,6 +835,8 @@ func buildRoundLog(
 	player actorLog,
 	enemy actorLog,
 	playerFirst bool,
+	playerName string,
+	enemyName string,
 ) []RoundLogEntry {
 
 	var log []RoundLogEntry
@@ -837,14 +844,15 @@ func buildRoundLog(
 	appendActor := func(
 		al actorLog,
 		opponent actorLog,
-		defeatedActor string,
+		defeatedName string,
+		defeatedKey string, // "player" or "enemy"
 	) {
 		log = append(log, al.lines...)
 
 		if !opponent.aliveAfter {
 			log = append(log, RoundLogEntry{
-				Text:   defeatedActor + " was defeated",
-				Effect: strings.ToLower(defeatedActor) + "_defeated",
+				Text:   defeatedName + " was defeated",
+				Effect: defeatedKey + "_defeated",
 			})
 		}
 	}
@@ -860,19 +868,19 @@ func buildRoundLog(
 	// Then offensive/skip actions in turn order
 	if playerFirst {
 		if !player.isDefensive {
-			appendActor(player, enemy, "Enemy")
+			appendActor(player, enemy, enemyName, "enemy")
 		}
 
 		if enemy.aliveAfter && !enemy.isDefensive {
-			appendActor(enemy, player, "Player")
+			appendActor(enemy, player, playerName, "player")
 		}
 	} else {
 		if !enemy.isDefensive {
-			appendActor(enemy, player, "Player")
+			appendActor(enemy, player, playerName, "player")
 		}
 
 		if player.aliveAfter && !player.isDefensive {
-			appendActor(player, enemy, "Enemy")
+			appendActor(player, enemy, enemyName, "enemy")
 		}
 	}
 

@@ -63,11 +63,8 @@ type RoundLogEntry struct {
 const (
 	EffectNone = "none"
 
-	EffectPlayerAttack = "player_attack"
-	EffectEnemyAttack  = "enemy_attack"
-
-	EffectPlayerDefend = "player_defend"
-	EffectEnemyDefend  = "enemy_defend"
+	EffectPlayerMove = "player_move"
+	EffectEnemyMove  = "enemy_move"
 
 	EffectPlayerHit = "player_hit"
 	EffectEnemyHit  = "enemy_hit"
