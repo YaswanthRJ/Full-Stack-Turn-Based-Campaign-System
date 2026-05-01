@@ -1,5 +1,4 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -18,46 +17,38 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <motion.header
-      initial={{ y: -60, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className="p-3 w-full shadow-lg border-b border-white/10"
+    <header
+      className="p-3 w-full shadow-lg border-b border-purple-500/20"
       style={{
-        background:
-          "linear-gradient(90deg, #5b21b6, #86198f, #3730a3)",
+        background: "linear-gradient(135deg, #0d001f 0%, #1a0033 100%)",
       }}
     >
       <div className="flex items-center justify-between text-white">
-        
         {/* Back */}
         {canGoBack ? (
-          <motion.button
+          <button
             onClick={handleBack}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="p-1 rounded-md hover:bg-white/20"
+            className="p-1 rounded-md hover:bg-purple-500/20 text-purple-300 transition"
           >
             ←
-          </motion.button>
+          </button>
         ) : (
           <div className="w-5" />
         )}
 
-        {/* Title */}
-        <h1 className="font-black text-sm tracking-widest uppercase">
-          
-        </h1>
+        {/* Title - commented out */}
+        {/* <h1 className="font-black text-sm tracking-widest uppercase text-purple-200">
+          FSTBCS
+        </h1> */}
 
         {/* Menu */}
-        <motion.button
+        <button
           onClick={onMenuClick}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="p-1 rounded-md hover:bg-white/20"
+          className="p-1 rounded-md hover:bg-purple-500/20 text-purple-300 transition"
         >
           ☰
-        </motion.button>
+        </button>
       </div>
-    </motion.header>
+    </header>
   );
 }
