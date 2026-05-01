@@ -135,11 +135,11 @@ interface MenuButtonProps {
 
 function MenuButton({ text, action, variant = "secondary", icon }: MenuButtonProps) {
   const styles = {
-    primary: {
-      background: "linear-gradient(135deg, #4c0099 0%, #7c3aed 60%, #a855f7 100%)",
-      border: "1px solid #c084fc",
-      color: "#fff",
-      boxShadow: "0 0 24px #7c3aed55, inset 0 1px 0 #ffffff22",
+   primary: {
+      background: "linear-gradient(135deg, #2e1065 0%, #4c1d95 100%)", // Darker, less flashy
+      border: "1px solid #a855f766", // Subtle border instead of bright
+      color: "#e9d5ff",
+      boxShadow: "0 0 12px #7c3aed33", // Reduced shadow
     },
     secondary: {
       background: "linear-gradient(135deg, #0d0018 0%, #1e003a 100%)",
@@ -233,17 +233,16 @@ export function Home() {
 
         <div className="w-full max-w-xs flex flex-col gap-3 py-4">
           {canContinue && (
-            <MenuButton text="Continue" action={handleContinue} variant="primary" icon="▶" />
+            <MenuButton text="Continue" action={handleContinue} variant="primary" />
           )}
 
           <MenuButton
             text="New Campaign"
             action={() => navigate("/campaigns")}
             variant="secondary"
-            icon="✦"
           />
 
-          <MenuButton text="Exit" action={() => console.log("exit game")} variant="ghost" icon="✕" />
+          <MenuButton text="Exit" action={() => console.log("exit game")} variant="ghost" />
         </div>
       </div>
     </div>
