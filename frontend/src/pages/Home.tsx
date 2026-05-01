@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { getSession, startNextFight } from "../service/campaign.service";
 import { getCreature, getCreatureActions } from "../service/creatures.service";
 import { useGame } from "../context/GameProvider";
@@ -38,25 +38,9 @@ function FloatingOrbs() {
   );
 }
 
-// ── Grid lines ─────────────────────────────────────────────────────────────
-function GridLines() {
-  return (
-    <div
-      className="absolute inset-0 pointer-events-none opacity-10"
-      style={{
-        backgroundImage: `
-          linear-gradient(#7c3aed22 1px, transparent 1px),
-          linear-gradient(90deg, #7c3aed22 1px, transparent 1px)
-        `,
-        backgroundSize: "40px 40px",
-      }}
-    />
-  );
-}
-
 // ── Particle sparks ────────────────────────────────────────────────────────
 function Sparks() {
-  const sparks = Array.from({ length: 22 }, (_, i) => ({
+  const sparks = Array.from({ length: 12 }, (_, i) => ({
     id: i,
     w: 2 + Math.random() * 2,
     left: `${Math.random() * 100}%`,
@@ -92,33 +76,28 @@ function Sparks() {
 function HeroTitle() {
   return (
     <div className="relative flex flex-col items-center gap-4">
-      {/* Spinning ring */}
+      {/* Icon with subtle darker circle */}
       <div className="relative w-28 h-28 flex items-center justify-center">
-        <motion.div
-          className="absolute inset-0 rounded-full border-2"
-          style={{ borderColor: "#7c3aed66", boxShadow: "0 0 20px #7c3aed44" }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        {/* Subtle circle background - slightly darker */}
+        <div 
+          className="absolute inset-0 rounded-full"
+          style={{ 
+            background: "radial-gradient(circle, #1a0033 0%, #0d001f 80%, transparent 100%)",
+            border: "1px solid #7c3aed44",
+          }}
         />
-        <motion.div
-          className="absolute inset-2 rounded-full border border-dashed"
-          style={{ borderColor: "#a855f744" }}
-          animate={{ rotate: -360 }}
-          transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
+        
+        {/* Icon - larger now */}
+        <img 
+          src="/src/assets/logo.png"
+          alt="Game Logo"
+          className="relative z-10 w-24 h-24 object-contain"
+          style={{ filter: "drop-shadow(0 0 20px #a855f7)" }}
         />
-        {/* Icon */}
-        <motion.span
-          className="text-5xl relative z-10"
-          animate={{ scale: [1, 1.06, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          style={{ filter: "drop-shadow(0 0 16px #a855f7)" }}
-        >
-          ⚔️
-        </motion.span>
       </div>
 
       {/* Game title */}
-      <motion.h1
+      <h1
         className="font-black tracking-widest uppercase text-center leading-none"
         style={{
           fontSize: "2.2rem",
@@ -128,52 +107,13 @@ function HeroTitle() {
           backgroundClip: "text",
           letterSpacing: "0.12em",
         }}
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.6 }}
       >
-        CREATURE
-        <br />
-        CLASH
-      </motion.h1>
-
-      <motion.p
-        className="text-purple-400 text-xs tracking-[0.3em] uppercase font-mono"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-      >
-        Battle · Conquer · Legend
-      </motion.p>
+        FSTBCS
+      </h1>
     </div>
   );
 }
 
-// ── Session badge ──────────────────────────────────────────────────────────
-function SessionBadge() {
-  return (
-    <motion.div
-      className="flex items-center gap-2 px-4 py-2 rounded-full"
-      style={{
-        background: "linear-gradient(90deg, #1e003a 0%, #2d0055 100%)",
-        border: "1px solid #a855f755",
-        boxShadow: "0 0 16px #7c3aed33",
-      }}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.7 }}
-    >
-      <motion.div
-        className="w-2 h-2 rounded-full bg-green-400"
-        animate={{ opacity: [1, 0.3, 1] }}
-        transition={{ duration: 1.2, repeat: Infinity }}
-      />
-      <span className="text-purple-300 text-xs font-black tracking-widest uppercase">
-        Campaign Active
-      </span>
-    </motion.div>
-  );
-}
 
 // ── Menu button ────────────────────────────────────────────────────────────
 interface MenuButtonProps {
@@ -269,46 +209,24 @@ export function Home() {
 
   return (
     <div
-      className="relative flex flex-col min-h-screen overflow-hidden"
+      className="relative flex flex-col overflow-hidden" style={{ height: "calc(100vh - 64px)" }}
       // style={{ background: "linear-gradient(180deg, #06000f 0%, #0d001f 100%)" }}
     >
-      <GridLines />
       <FloatingOrbs />
       <Sparks />
 
-      <div className="relative flex flex-col items-center justify-between flex-1 px-6 pt-16 pb-10 gap-8">
+      <div className="relative flex flex-col items-center flex-1 px-6 pt-16 pb-10 gap-16">
         {/* Hero */}
         <HeroTitle />
 
-        {/* Session badge */}
-        <AnimatePresence>
-          {canContinue && <SessionBadge />}
-        </AnimatePresence>
-
         {/* Menu */}
-        <div className="w-full max-w-xs flex flex-col gap-3">
-          <motion.div
-            className="w-full h-px mb-2"
-            style={{ background: "linear-gradient(90deg, transparent, #7c3aed88, transparent)" }}
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-          />
-
+        <div className="w-full max-w-xs flex flex-col gap-3 py-4">
+         
           {canContinue && (
             <MenuButton text="Continue" action={handleContinue} variant="primary" icon="▶" delay={0.7} />
           )}
           <MenuButton text="New Campaign" action={() => navigate("/campaigns")} variant="secondary" icon="✦" delay={0.8} />
           <MenuButton text="Exit" action={() => console.log("exit game")} variant="ghost" icon="✕" delay={0.9} />
-
-          <motion.p
-            className="text-center text-[10px] text-purple-900 font-mono tracking-widest mt-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.1 }}
-          >
-            v1.0.0 · CREATURE CLASH
-          </motion.p>
         </div>
       </div>
     </div>
