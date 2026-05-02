@@ -13,7 +13,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const canGoBack = !ROOT_ROUTES.includes(location.pathname);
 
   function handleBack() {
-    if (canGoBack) navigate(-1);
+    navigate("/")
   }
 
   return (

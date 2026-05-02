@@ -31,7 +31,20 @@ export const AUDIO_PATHS: Record<LoopType | SfxType, string> = {
 export const LOOP_KEYS: LoopType[] = ["home", "combat"];
 export const SFX_KEYS: SfxType[] = ["victory", "defeat", "campaignVictory"];
 
-export const FADE_DURATION = 400; // ms — sits comfortably in the 300–500ms range
+/** Crossfade duration when switching between loops, or fading out via stopLoop(). */
+export const FADE_DURATION = 1000;
+
+/** How long a cold-start loop fades in from silence (no previous loop playing). */
+export const LOOP_FADE_IN = 1500;
+
+/** BGM volume multiplier applied while an SFX is active (30% of full volume). */
+export const DUCK_LEVEL = 0.3;
+
+/** Time in ms to fade BGM down when an SFX starts. */
+export const DUCK_FADE_DOWN = 200;
+
+/** Time in ms to fade BGM back up after all SFX have finished. */
+export const DUCK_FADE_UP = 600;
 
 export const STORAGE_KEYS = {
   musicVolume: "game_audio_musicVolume",

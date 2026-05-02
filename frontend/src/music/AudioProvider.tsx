@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import { Howl, Howler } from "howler";
-import { type AudioContextValue, type AudioState, type LoopType, type SfxType, LOOP_KEYS, SFX_KEYS, AUDIO_PATHS, FADE_DURATION, STORAGE_KEYS } from "./AudioTypes";
+import { AUDIO_PATHS, DUCK_FADE_DOWN, DUCK_FADE_UP, DUCK_LEVEL, FADE_DURATION, LOOP_FADE_IN, LOOP_KEYS, SFX_KEYS, STORAGE_KEYS, type AudioContextValue, type AudioState, type LoopType, type SfxType } from "./AudioTypes";
 
 
 // ---------------------------------------------------------------------------
@@ -72,6 +72,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
   // Per-loop fade-out timers — keyed by LoopType so rapid A→B→C crossfades
   // don't cancel the stop-timer of a loop that is still fading out.
   const fadeOutTimers = useRef<Partial<Record<LoopType, ReturnType<typeof setTimeout>>>>({});
+
+  // Ducking state: counts how many SFX are currently playing so we only
+  // restore BGM volume after the LAST one finishes, not the first.
+  const sfxActiveCount = useRef(0);
+  const duckRestoreTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Latest volume refs — allows Howl callbacks to read current values without
   // stale-closure issues.
@@ -147,6 +152,30 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ── Internal helpers ─────────────────────────────────────────────────────
 
+  /** Lower the active BGM to DUCK_LEVEL fraction of musicVolume. */
+  const duckBgm = useCallback(() => {
+    const cur = activeLoopRef.current;
+    if (!cur) return;
+    const howl = loopHowls.current[cur];
+    if (!howl?.playing()) return;
+    // Cancel any in-progress restore fade so we don't fight it
+    if (duckRestoreTimer.current !== null) {
+      clearTimeout(duckRestoreTimer.current);
+      duckRestoreTimer.current = null;
+    }
+    const duckedVol = musicVolRef.current * DUCK_LEVEL;
+    howl.fade(howl.volume(), duckedVol, DUCK_FADE_DOWN);
+  }, []);
+
+  /** Restore the active BGM to full musicVolume once all SFX have ended. */
+  const unduckBgm = useCallback(() => {
+    const cur = activeLoopRef.current;
+    if (!cur) return;
+    const howl = loopHowls.current[cur];
+    if (!howl?.playing()) return;
+    howl.fade(howl.volume(), musicVolRef.current, DUCK_FADE_UP);
+  }, []);
+
   /** Fade out a specific loop howl and stop it after the fade completes. */
   const fadeOutLoop = useCallback(
     (loopKey: LoopType, duration: number, onDone?: () => void) => {
@@ -185,10 +214,15 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
       const newHowl = loopHowls.current[newLoop];
       if (!newHowl) return;
 
+      // Cold start (nothing was playing) → long graceful fade-in.
+      // Crossfade (replacing another loop) → short FADE_DURATION to stay in sync
+      // with the outgoing loop's fade-out.
+      const fadeIn = prevLoop ? FADE_DURATION : LOOP_FADE_IN;
+
       // Start new loop at silence then fade in
       newHowl.volume(0);
       if (!newHowl.playing()) newHowl.play();
-      newHowl.fade(0, targetVol, FADE_DURATION);
+      newHowl.fade(0, targetVol, fadeIn);
 
       setState((s) => ({ ...s, currentLoop: newLoop }));
 
@@ -216,11 +250,30 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!enabledRef.current) return;
     const howl = sfxHowls.current[sfx];
     if (!howl) return;
-    // Play returns a sound ID; set volume on that ID only so concurrent
-    // instances of the same SFX don't overwrite each other's volume.
+
+    // Duck BGM on the first SFX that starts (count goes 0 → 1)
+    sfxActiveCount.current += 1;
+    if (sfxActiveCount.current === 1) {
+      duckBgm();
+    }
+
     const id = howl.play();
     howl.volume(sfxVolRef.current, id);
-  }, []);
+
+    // Restore BGM only after this specific sound instance ends
+    howl.once("end", () => {
+      sfxActiveCount.current = Math.max(0, sfxActiveCount.current - 1);
+      if (sfxActiveCount.current === 0) {
+        // Small buffer so the restore doesn't kick in if another SFX
+        // fires within the next 80ms (e.g. rapid button taps)
+        if (duckRestoreTimer.current !== null) clearTimeout(duckRestoreTimer.current);
+        duckRestoreTimer.current = setTimeout(() => {
+          if (sfxActiveCount.current === 0) unduckBgm();
+          duckRestoreTimer.current = null;
+        }, 80);
+      }
+    }, id);
+  }, [duckBgm, unduckBgm]);
 
   // ── setMusicVolume ────────────────────────────────────────────────────────
   const setMusicVolume = useCallback((v: number) => {
@@ -229,11 +282,14 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({
     savePref(STORAGE_KEYS.musicVolume, clamped);
     setState((s) => ({ ...s, musicVolume: clamped }));
 
-    // Apply immediately to any playing loop
+    // Apply immediately to any playing loop, respecting active duck state
     const cur = activeLoopRef.current;
     if (cur) {
       const howl = loopHowls.current[cur];
-      if (howl?.playing()) howl.volume(clamped);
+      if (howl?.playing()) {
+        const target = sfxActiveCount.current > 0 ? clamped * DUCK_LEVEL : clamped;
+        howl.volume(target);
+      }
     }
   }, []);
 

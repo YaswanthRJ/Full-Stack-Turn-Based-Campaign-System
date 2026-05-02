@@ -21,7 +21,7 @@ INSERT INTO actions (
 ('20000000-0000-0000-0000-000000000010', 'Maul',         'A savage crushing attack',   'offensive', 1.60, 'physical', 0.85, 5, 'action.png'),
 ('20000000-0000-0000-0000-000000000011', 'Flamethrower', 'A stream of burning flame',  'offensive', 1.80, 'fire',     0.85, 6, 'action.png'),
 ('20000000-0000-0000-0000-000000000012', 'Sky Attack',   'A diving strike from above', 'offensive', 2.00, 'physical', 0.75, 7, 'action.png'),
-('20000000-0000-0000-0000-000000000013', 'Dodge',        'Evade incoming attacks',     'defensive', 0.10, 'evasion',  0.50, 2, 'action.png'),
+('20000000-0000-0000-0000-000000000013', 'Dodge',        'Evade incoming attacks',     'defensive', 0.90, 'evasion',  0.10, 2, 'action.png'),
 ('20000000-0000-0000-0000-000000000014', 'Block',        'Reduce incoming damage',     'defensive', 0.70, 'defense',  0.90, 2, 'action.png');
 
 
@@ -36,7 +36,7 @@ INSERT INTO creatures (
 ('30000000-0000-0000-0000-000000000001', 'Peasant', 'A human villager', 'creature.png', TRUE),
 ('30000000-0000-0000-0000-000000000002', 'Soldier', 'A trained human fighter', 'creature.png', TRUE),
 ('30000000-0000-0000-0000-000000000003', 'Wolf', 'A fast aggressive pack hunter', 'creature.png', FALSE),
-('30000000-0000-0000-0000-000000000004', 'Dragon', 'A legendary creature', 'creature.png', TRUE);
+('30000000-0000-0000-0000-000000000004', 'Dragon', 'A legendary creature', 'dragon.png', TRUE);
 
 
 -- =====================================================
@@ -97,10 +97,10 @@ INSERT INTO campaign_templates (
 
 ('50000000-0000-0000-0000-000000000002',
  'Recover Egg',
- 'Punish the villains who destroyed your eggs',
- 'start.png',
- 'Your enemies lie defeated. Vengeance is yours.',
- 'end.png',
+ 'You return to your lair to find your clutch of eggs shattered. Footprints lead toward a nearby human city.',
+ 'dragon_intro.jpg',
+ 'With the defenders vanquished, you reduce the city to ashes. You leave satisfied, knowing fewer humans will infest the world.',
+ 'dragon_outro.jpg',
  'active');
 
 -- =====================================================

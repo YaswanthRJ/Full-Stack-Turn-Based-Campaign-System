@@ -9,7 +9,7 @@ import { GameScreen } from "./pages/GameScreen";
 import { AuthForm } from "./pages/AuthForm";
 import { UserStatsPage } from "./pages/UserStatsPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { AudioProvider, AudioUnlockGate, AudioReadyGate } from "./music";
+import { AudioProvider, AudioUnlockGate } from "./music";
 
 
 function App() {
@@ -18,7 +18,6 @@ function App() {
       <GameProvider>
         <AudioProvider>
           <AudioUnlockGate>
-            <AudioReadyGate>
               <Routes>
                 <Route element={<Layout />}>
                   <Route path="/" element={<Home />} />
@@ -30,7 +29,6 @@ function App() {
                   <Route path="/settings" element={<SettingsPage />} />
                 </Route>
               </Routes>
-            </AudioReadyGate>
           </AudioUnlockGate>
         </AudioProvider>
       </GameProvider>

@@ -14,12 +14,13 @@ import {
 } from "../service/campaign.service";
 import { getCreature } from "../service/creatures.service";
 import type { Fight, RoundLogEntry } from "../types/campaign.types";
+import { useAudio, useLoopScreen } from "../music";
 
 // ── AnimEvent ──────────────────────────────────────────────────────────────
 
 type AnimEvent =
   | "player_move" | "enemy_move"
-  | "player_hit"  | "enemy_hit"
+  | "player_hit" | "enemy_hit"
   | "player_miss" | "enemy_miss"
   | "player_skip" | "enemy_skip"
   | "player_defeated" | "enemy_defeated";
@@ -78,12 +79,12 @@ function FightPanel({ state, onFightEnded }: FightPanelProps) {
   const { session, fight } = state;
 
   // uiFight = animated display copy, server fight = source of truth
-  const [uiFight, setUiFight]     = useState<Fight>(fight);
-  const [lines, setLines]         = useState<RoundLogEntry[]>([]);
+  const [uiFight, setUiFight] = useState<Fight>(fight);
+  const [lines, setLines] = useState<RoundLogEntry[]>([]);
   const [eventAnim, setEventAnim] = useState<AnimEvent | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const playing       = useRef(false);
+  const playing = useRef(false);
   const pendingResult = useRef<{ fight: Fight; campaignSessionCompleted: boolean; roundLog: RoundLogEntry[] } | null>(null);
 
   async function handleAction(actionId: string) {
@@ -140,7 +141,7 @@ function FightPanel({ state, onFightEnded }: FightPanelProps) {
     setEventAnim(null);
 
     const serverFight = res.fight;
-    const completed   = res.campaignSessionCompleted;
+    const completed = res.campaignSessionCompleted;
 
     if (serverFight.status === "active") {
       // Fight continues — sync uiFight to server and stay in fight phase
@@ -331,6 +332,8 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
 // Only job: own phase transitions. No fight logic, no display logic.
 
 export function GameScreen() {
+  const { playSfx } = useAudio();
+  useLoopScreen("combat");
   useGameInitializer();
 
   const { state, setState, reset } = useGame();
@@ -340,6 +343,13 @@ export function GameScreen() {
   // Called by FightPanel when server says fight is over
   function handleFightEnded(result: ResultData) {
     if (state.phase !== "fight") return;
+    if (result.campaignCompleted && result.outcome === "player_won") {
+      playSfx("campaignVictory");
+    } else if (result.outcome === "player_won") {
+      playSfx("victory");
+    } else {
+      playSfx("defeat");
+    }
     setState({
       phase: "result",
       session: state.session,
