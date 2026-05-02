@@ -870,16 +870,14 @@ func buildRoundLog(
 		if !player.isDefensive {
 			appendActor(player, enemy, enemyName, "enemy")
 		}
-
-		if enemy.aliveAfter && !enemy.isDefensive {
+		if enemy.aliveAfter && !enemy.isDefensive { // ← already correct
 			appendActor(enemy, player, playerName, "player")
 		}
 	} else {
 		if !enemy.isDefensive {
 			appendActor(enemy, player, playerName, "player")
 		}
-
-		if player.aliveAfter && !player.isDefensive {
+		if enemy.aliveAfter && !player.isDefensive { // ← add enemy.aliveAfter guard here
 			appendActor(player, enemy, enemyName, "enemy")
 		}
 	}
