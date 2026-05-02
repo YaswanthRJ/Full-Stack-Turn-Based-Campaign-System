@@ -16,6 +16,8 @@ type UserRepository interface {
 	GetByUserId(ctx context.Context, db DBTX, userID string) (string, error)
 	RecordFightResult(ctx context.Context, db DBTX, userID string, victory bool) error
 	RecordCampaignComplete(ctx context.Context, db DBTX, userID string, campaignTemplateId string) error
+	GetCompletedCampaignCount(ctx context.Context, db DBTX, userID string) (int, error)
+	GetFightStats(ctx context.Context, db DBTX, userID string) (fights int, wins int, losses int, err error)
 }
 
 type userRepo struct {
@@ -137,4 +139,44 @@ func (r *userRepo) RecordCampaignComplete(ctx context.Context, db DBTX, userID s
 
 	_, err := db.ExecContext(ctx, query, userID, campaignTemplateId)
 	return err
+}
+
+func (r *userRepo) GetCompletedCampaignCount(ctx context.Context, db DBTX, userID string) (int, error) {
+	var count int
+
+	err := db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM user_campaign_completions
+		WHERE user_id = $1
+	`, userID).Scan(&count)
+
+	if err != nil {
+		return 0, fmt.Errorf("userRepo.GetCompletedCampaignCount: %w", err)
+	}
+
+	return count, nil
+}
+
+func (r *userRepo) GetFightStats(ctx context.Context, db DBTX, userID string) (int, int, int, error) {
+	var fights, wins int
+
+	err := db.QueryRowContext(ctx, `
+		SELECT fights, victories
+		FROM user_analytics
+		WHERE user_id = $1
+	`, userID).Scan(&fights, &wins)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, 0, 0, nil // user has no stats yet
+		}
+		return 0, 0, 0, fmt.Errorf("userRepo.GetFightStats: %w", err)
+	}
+
+	losses := fights - wins
+	if losses < 0 {
+		losses = 0
+	}
+
+	return fights, wins, losses, nil
 }

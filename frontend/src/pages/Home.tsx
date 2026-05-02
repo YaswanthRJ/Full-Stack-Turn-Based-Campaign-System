@@ -49,7 +49,7 @@ function FloatingOrbs() {
 function Sparks() {
   // ✅ FIXED: sparks are generated only once (not every render)
   const sparks = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => ({
+    return Array.from({ length: 20 }, (_, i) => ({
       id: i,
       w: 2 + Math.random() * 2,
       left: `${Math.random() * 100}%`,

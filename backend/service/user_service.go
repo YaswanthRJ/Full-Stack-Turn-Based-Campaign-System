@@ -19,6 +19,7 @@ type UserService interface {
 	CheckAuth(ctx context.Context, userID string) (*AuthCheckResult, error)
 	RecordFightResult(ctx context.Context, userID string, victory bool) error
 	RecordCampaignComplete(ctx context.Context, userID string, campaignTemplateID string) error
+	GetStats(ctx context.Context, userID string) (*UserStatsResult, error)
 }
 
 type userService struct {
@@ -113,4 +114,27 @@ func (s *userService) RecordFightResult(ctx context.Context, userID string, vict
 
 func (s *userService) RecordCampaignComplete(ctx context.Context, userID string, campaignTemplateID string) error {
 	return s.repo.RecordCampaignComplete(ctx, s.db, userID, campaignTemplateID)
+}
+
+func (s *userService) GetStats(ctx context.Context, userID string) (*UserStatsResult, error) {
+	if userID == "" {
+		return nil, errors.New("invalid user id")
+	}
+
+	completed, err := s.repo.GetCompletedCampaignCount(ctx, s.db, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get completed campaigns: %w", err)
+	}
+
+	fights, wins, losses, err := s.repo.GetFightStats(ctx, s.db, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get fight stats: %w", err)
+	}
+
+	return &UserStatsResult{
+		CompletedCampaigns: completed,
+		Fights:             fights,
+		Wins:               wins,
+		Losses:             losses,
+	}, nil
 }

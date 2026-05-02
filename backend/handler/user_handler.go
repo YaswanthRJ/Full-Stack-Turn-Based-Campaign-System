@@ -119,3 +119,24 @@ func (h *UserHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
 
 	utils.WriteJSON(w, http.StatusOK, result)
 }
+
+func (h *UserHandler) GetStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := utils.GetUserID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	stats, err := h.service.GetStats(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "failed to fetch stats", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, stats)
+}

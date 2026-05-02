@@ -1,4 +1,4 @@
-import type { AuthResponse, Credentials } from "../types/user.types";
+import type { AuthResponse, Credentials, UserStats } from "../types/user.types";
 import { get, post } from "./api";
 
 type User = {
@@ -76,6 +76,14 @@ export async function login(data: Credentials): Promise<AuthResponse | null> {
 export async function register(data: Credentials): Promise<AuthResponse | null> {
   try {
     return await post<AuthResponse>("user/register", data);
+  } catch {
+    return null;
+  }
+}
+
+export async function getUserStats(): Promise<UserStats | null> {
+  try {
+    return await get<UserStats>("user/stats");
   } catch {
     return null;
   }

@@ -7,6 +7,8 @@ import { GameProvider } from "./context/GameProvider";
 import { AuthProvider } from "./context/AuthProvider";
 import { GameScreen } from "./pages/GameScreen";
 import { AuthForm } from "./pages/AuthForm";
+import { UserStatsPage } from "./pages/UserStatsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
             <Route path="/creatures/:campaignId" element={<Creatures />} />
             <Route  path="/game"  element= {<GameScreen /> } />
             <Route  path="/auth"  element= {<AuthForm /> } />
+            <Route  path="/stats"  element= {<UserStatsPage /> } />
+            <Route  path="/settings"  element= {<SettingsPage /> } />
           </Route>
         </Routes>
       </GameProvider>
