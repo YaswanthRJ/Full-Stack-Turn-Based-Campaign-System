@@ -7,6 +7,7 @@ import { useGame } from "../context/GameProvider";
 import type { CurrentState } from "../types/campaign.types";
 
 import logo from "../assets/logo.png"; // ✅ FIXED (correct way)
+import { useLoopScreen } from "../music";
 
 // ── Floating orb background ────────────────────────────────────────────────
 function FloatingOrbs() {
@@ -183,6 +184,7 @@ function MenuButton({ text, action, variant = "secondary", icon }: MenuButtonPro
 
 // ── Home page ──────────────────────────────────────────────────────────────
 export function Home() {
+  useLoopScreen("home"); 
   const [sessionState, setSessionState] = useState<CurrentState | null>(null);
   const { setState: setGameState } = useGame();
   const navigate = useNavigate();

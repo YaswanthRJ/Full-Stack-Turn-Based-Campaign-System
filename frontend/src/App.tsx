@@ -9,22 +9,30 @@ import { GameScreen } from "./pages/GameScreen";
 import { AuthForm } from "./pages/AuthForm";
 import { UserStatsPage } from "./pages/UserStatsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { AudioProvider, AudioUnlockGate, AudioReadyGate } from "./music";
+
 
 function App() {
   return (
     <AuthProvider>
       <GameProvider>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/campaigns" element={<Campaigns />} />
-            <Route path="/creatures/:campaignId" element={<Creatures />} />
-            <Route  path="/game"  element= {<GameScreen /> } />
-            <Route  path="/auth"  element= {<AuthForm /> } />
-            <Route  path="/stats"  element= {<UserStatsPage /> } />
-            <Route  path="/settings"  element= {<SettingsPage /> } />
-          </Route>
-        </Routes>
+        <AudioProvider>
+          <AudioUnlockGate>
+            <AudioReadyGate>
+              <Routes>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/campaigns" element={<Campaigns />} />
+                  <Route path="/creatures/:campaignId" element={<Creatures />} />
+                  <Route path="/game" element={<GameScreen />} />
+                  <Route path="/auth" element={<AuthForm />} />
+                  <Route path="/stats" element={<UserStatsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route>
+              </Routes>
+            </AudioReadyGate>
+          </AudioUnlockGate>
+        </AudioProvider>
       </GameProvider>
     </AuthProvider>
   );
