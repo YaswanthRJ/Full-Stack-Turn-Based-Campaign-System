@@ -107,6 +107,5 @@ func (r *userRepo) GetByUserId(ctx context.Context, db DBTX, userID string) (str
 		return "", nil
 	}
 
-	fmt.Println("Repo Result", username.String)
 	return username.String, nil
 }

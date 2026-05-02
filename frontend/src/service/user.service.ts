@@ -1,4 +1,5 @@
-import { get } from "./api";
+import type { AuthResponse, Credentials } from "../types/user.types";
+import { get, post } from "./api";
 
 type User = {
   message: string;
@@ -53,7 +54,7 @@ async function checkAuthentication(): Promise<AuthCheckResult> {
     const user = await get<AuthCheckResult>(`user/auth`);
 
     return {
-      isAuthenticated: true,
+      isAuthenticated: user.isAuthenticated,
       username: user.username,
     };
   } catch {
@@ -61,5 +62,21 @@ async function checkAuthentication(): Promise<AuthCheckResult> {
       isAuthenticated: false,
       username: null,
     };
+  }
+}
+
+export async function login(data: Credentials): Promise<AuthResponse | null> {
+  try {
+    return await post<AuthResponse>("user/signin", data);
+  } catch {
+    return null;
+  }
+}
+
+export async function register(data: Credentials): Promise<AuthResponse | null> {
+  try {
+    return await post<AuthResponse>("user/register", data);
+  } catch {
+    return null;
   }
 }

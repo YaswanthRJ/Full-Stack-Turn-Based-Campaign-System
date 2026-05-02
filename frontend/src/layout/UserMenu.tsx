@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthProvider";
 
 type UserMenuProps = {
   open: boolean;
@@ -7,6 +9,9 @@ type UserMenuProps = {
 };
 
 export function UserMenu({ open, onClose }: UserMenuProps) {
+  const { state } = useAuth();
+  const navigate = useNavigate();
+
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -20,6 +25,21 @@ export function UserMenu({ open, onClose }: UserMenuProps) {
       document.removeEventListener("keydown", handleEscape);
     };
   }, [open, onClose]);
+
+  const menuItems = state.isAuthenticated
+    ? [
+        { label: "Stats", path: "/stats" },
+        { label: "Settings", path: "/settings" },
+      ]
+    : [
+        { label: "Sign In", path: "/auth" },
+        { label: "Settings", path: "/settings" },
+      ];
+
+  function handleClick(path: string) {
+    onClose();
+    navigate(path);
+  }
 
   return (
     <AnimatePresence>
@@ -55,16 +75,16 @@ export function UserMenu({ open, onClose }: UserMenuProps) {
 
             {/* Menu */}
             <div className="mt-6 space-y-1">
-              {["Profile", "Stats", "Settings"].map((item) => (
+              {menuItems.map((item) => (
                 <motion.button
-                  key={item}
+                  key={item.label}
+                  onClick={() => handleClick(item.path)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="w-full text-left px-4 py-3 rounded-lg 
-                  text-purple-200 font-medium
-                  transition"
+                  text-purple-200 font-medium transition"
                 >
-                  {item}
+                  {item.label}
                 </motion.button>
               ))}
             </div>

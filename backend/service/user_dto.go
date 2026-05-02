@@ -1,6 +1,6 @@
 package service
 
 type AuthCheckResult struct {
-	IsAuthenticated bool
-	Username        *string
+	IsAuthenticated bool    `json:"isAuthenticated"`
+	Username        *string `json:"username"`
 }
