@@ -90,6 +90,7 @@ func registerGameRoutes(mux *http.ServeMux, userHandler *handler.UserHandler, ca
 	gameMux.HandleFunc("GET /user", userHandler.CreateUser)
 	gameMux.HandleFunc("POST /user/register", userHandler.Register)
 	gameMux.HandleFunc("POST /user/signin", userHandler.Login)
+	gameMux.HandleFunc("GET /user/auth", userHandler.CheckAuth)
 
 	gameMux.HandleFunc("GET /campaign/session", campaignHandler.GetActiveUserSession)
 	gameMux.HandleFunc("GET /campaign/{id}/creatures", campaignHandler.GetCreatures)

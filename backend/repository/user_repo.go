@@ -13,6 +13,7 @@ type UserRepository interface {
 	Count(ctx context.Context, db DBTX) (int, error)
 	Register(ctx context.Context, db DBTX, user *domain.User) error
 	GetByUsername(ctx context.Context, db DBTX, username string) (*domain.User, error)
+	GetByUserId(ctx context.Context, db DBTX, userID string) (string, error)
 }
 
 type userRepo struct {
@@ -85,4 +86,27 @@ func (r *userRepo) GetByUsername(ctx context.Context, db DBTX, username string) 
 	}
 
 	return &user, nil
+}
+
+func (r *userRepo) GetByUserId(ctx context.Context, db DBTX, userID string) (string, error) {
+	var username sql.NullString
+	err := db.QueryRowContext(
+		ctx,
+		`SELECT username FROM users WHERE id = $1`,
+		userID,
+	).Scan(&username)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", sql.ErrNoRows
+		}
+		return "", fmt.Errorf("userRepo.GetByUserId: %w", err)
+	}
+
+	if !username.Valid {
+		return "", nil
+	}
+
+	fmt.Println("Repo Result", username.String)
+	return username.String, nil
 }

@@ -95,3 +95,27 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		"user_id": user.ID,
 	})
 }
+
+func (h *UserHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := utils.GetUserID(r.Context())
+	if !ok {
+		utils.WriteJSON(w, http.StatusOK, map[string]any{
+			"isAuthenticated": false,
+			"username":        nil,
+		})
+		return
+	}
+
+	result, err := h.service.CheckAuth(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "auth check failed", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, result)
+}

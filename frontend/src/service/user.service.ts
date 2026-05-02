@@ -28,7 +28,7 @@ export async function initUser(): Promise<InitUserResult> {
   const storedUserId = getUserFromLocalStorage();
 
   if (storedUserId) {
-    const auth = await checkAuthentication(storedUserId);
+    const auth = await checkAuthentication();
 
     return {
       userId: storedUserId,
@@ -48,9 +48,9 @@ export async function initUser(): Promise<InitUserResult> {
   };
 }
 
-async function checkAuthentication(id: string): Promise<AuthCheckResult> {
+async function checkAuthentication(): Promise<AuthCheckResult> {
   try {
-    const user = await get<AuthCheckResult>(`user/${id}`);
+    const user = await get<AuthCheckResult>(`user/auth`);
 
     return {
       isAuthenticated: true,

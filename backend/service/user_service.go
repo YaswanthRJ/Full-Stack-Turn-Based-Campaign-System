@@ -16,6 +16,7 @@ type UserService interface {
 	CreateUser(ctx context.Context) (*domain.User, error)
 	RegisterUser(ctx context.Context, userID string, userName string, password string) (*domain.User, error)
 	Login(ctx context.Context, userName string, password string) (*domain.User, error)
+	CheckAuth(ctx context.Context, userID string) (*AuthCheckResult, error)
 }
 
 type userService struct {
@@ -83,4 +84,23 @@ func (s *userService) Login(ctx context.Context, userName string, password strin
 	}
 
 	return user, nil
+}
+
+func (s *userService) CheckAuth(ctx context.Context, userID string) (*AuthCheckResult, error) {
+	username, err := s.repo.GetByUserId(ctx, s.db, userID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &AuthCheckResult{
+				IsAuthenticated: false,
+				Username:        nil,
+			}, nil
+		}
+		return nil, err
+	}
+
+	return &AuthCheckResult{
+		IsAuthenticated: username != "",
+		Username:        &username,
+	}, nil
 }
