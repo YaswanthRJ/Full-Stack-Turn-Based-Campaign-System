@@ -17,6 +17,8 @@ type UserService interface {
 	RegisterUser(ctx context.Context, userID string, userName string, password string) (*domain.User, error)
 	Login(ctx context.Context, userName string, password string) (*domain.User, error)
 	CheckAuth(ctx context.Context, userID string) (*AuthCheckResult, error)
+	RecordFightResult(ctx context.Context, userID string, victory bool) error
+	RecordCampaignComplete(ctx context.Context, userID string, campaignTemplateID string) error
 }
 
 type userService struct {
@@ -103,4 +105,12 @@ func (s *userService) CheckAuth(ctx context.Context, userID string) (*AuthCheckR
 		IsAuthenticated: username != "",
 		Username:        &username,
 	}, nil
+}
+
+func (s *userService) RecordFightResult(ctx context.Context, userID string, victory bool) error {
+	return s.repo.RecordFightResult(ctx, s.db, userID, victory)
+}
+
+func (s *userService) RecordCampaignComplete(ctx context.Context, userID string, campaignTemplateID string) error {
+	return s.repo.RecordCampaignComplete(ctx, s.db, userID, campaignTemplateID)
 }

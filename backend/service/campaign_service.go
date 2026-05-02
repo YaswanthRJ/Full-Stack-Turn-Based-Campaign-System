@@ -32,6 +32,7 @@ type campaignService struct {
 	creatureService CreatureService
 	actionService   ActionService
 	engineService   EngineService
+	userService     UserService
 }
 
 func NewCampaignService(
@@ -40,6 +41,7 @@ func NewCampaignService(
 	creatureService CreatureService,
 	actionService ActionService,
 	engineService EngineService,
+	userService UserService,
 ) CampaignService {
 	return &campaignService{
 		db:              db,
@@ -47,6 +49,7 @@ func NewCampaignService(
 		creatureService: creatureService,
 		actionService:   actionService,
 		engineService:   engineService,
+		userService:     userService,
 	}
 }
 
@@ -524,6 +527,17 @@ func (s *campaignService) ResolveRound(
 	if err = s.repo.UpdateFight(ctx, tx, currentFight); err != nil {
 		return nil, fmt.Errorf("update fight: %w", err)
 	}
+	if currentFight.Status == domain.FightStatusPlayerWon {
+		if err = s.userService.RecordFightResult(ctx, userID, true); err != nil {
+			return nil, fmt.Errorf("record fight win: %w", err)
+		}
+	}
+
+	if currentFight.Status == domain.FightStatusPlayerLost {
+		if err = s.userService.RecordFightResult(ctx, userID, false); err != nil {
+			return nil, fmt.Errorf("record fight loss: %w", err)
+		}
+	}
 
 	// ===== SESSION =====
 
@@ -549,6 +563,11 @@ func (s *campaignService) ResolveRound(
 		if currentSession.CurrentStageIndex >= stageCount {
 			currentSession.Status = domain.SessionStatusCompleted
 			sessionCompleted = true
+
+			err = s.userService.RecordCampaignComplete(ctx, userID, currentSession.CampaignTemplateID)
+			if err != nil {
+				return nil, fmt.Errorf("record campaign completion: %w", err)
+			}
 		}
 
 		if err = s.repo.UpdateSession(ctx, tx, currentSession); err != nil {
@@ -839,46 +858,65 @@ func buildRoundLog(
 	enemyName string,
 ) []RoundLogEntry {
 
-	var log []RoundLogEntry
-
-	appendActor := func(
-		al actorLog,
-		opponent actorLog,
-		defeatedName string,
-		defeatedKey string, // "player" or "enemy"
-	) {
-		log = append(log, al.lines...)
-
-		if !opponent.aliveAfter {
-			log = append(log, RoundLogEntry{
-				Text:   defeatedName + " was defeated",
-				Effect: defeatedKey + "_defeated",
-			})
-		}
+	// 1. Determine the two "attacker goes, then check if opponent survives" pairs
+	type turn struct {
+		actor        actorLog
+		opponent     actorLog
+		opponentName string
+		opponentKey  string
 	}
 
-	// Defensive actions always display first
-	if player.isDefensive {
-		log = append(log, player.lines...)
-	}
-	if enemy.isDefensive {
-		log = append(log, enemy.lines...)
-	}
-
-	// Then offensive/skip actions in turn order
+	var turns []turn
 	if playerFirst {
-		if !player.isDefensive {
-			appendActor(player, enemy, enemyName, "enemy")
-		}
-		if enemy.aliveAfter && !enemy.isDefensive { // ← already correct
-			appendActor(enemy, player, playerName, "player")
+		turns = []turn{
+			{player, enemy, enemyName, "enemy"},
+			{enemy, player, playerName, "player"},
 		}
 	} else {
-		if !enemy.isDefensive {
-			appendActor(enemy, player, playerName, "player")
+		turns = []turn{
+			{enemy, player, playerName, "player"},
+			{player, enemy, enemyName, "enemy"},
 		}
-		if enemy.aliveAfter && !player.isDefensive { // ← add enemy.aliveAfter guard here
-			appendActor(player, enemy, enemyName, "enemy")
+	}
+
+	var log []RoundLogEntry
+
+	// 2. Defensive actions always show first
+	for _, t := range turns {
+		if t.actor.isDefensive {
+			log = append(log, t.actor.lines...)
+		}
+	}
+
+	// 3. Then offensive/skip turns in order, stopping if the actor is already dead
+	actorAlive := map[string]bool{
+		"player": true,
+		"enemy":  true,
+	}
+
+	for _, t := range turns {
+		if t.actor.isDefensive {
+			continue
+		}
+
+		actorKey := "player"
+		if t.opponentKey == "player" {
+			actorKey = "enemy"
+		}
+
+		// Don't act if already killed by the previous turn
+		if !actorAlive[actorKey] {
+			continue
+		}
+
+		log = append(log, t.actor.lines...)
+
+		if !t.opponent.aliveAfter {
+			actorAlive[t.opponentKey] = false
+			log = append(log, RoundLogEntry{
+				Text:   t.opponentName + " was defeated",
+				Effect: t.opponentKey + "_defeated",
+			})
 		}
 	}
 

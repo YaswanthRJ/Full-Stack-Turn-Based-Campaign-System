@@ -59,7 +59,7 @@ func main() {
 	actionService := service.NewActionService(db, actionRepo)
 	creatureService := service.NewCreatureService(db, creatureRepo)
 	engineService := service.NewEngineService()
-	campaignService := service.NewCampaignService(db, campaignRepo, creatureService, actionService, engineService)
+	campaignService := service.NewCampaignService(db, campaignRepo, creatureService, actionService, engineService, userService)
 	statsService := service.NewStatsService(userRepo, actionRepo, creatureRepo, campaignRepo, db)
 
 	userHandler := handler.NewUserhandler(userService)

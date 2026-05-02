@@ -14,6 +14,8 @@ type UserRepository interface {
 	Register(ctx context.Context, db DBTX, user *domain.User) error
 	GetByUsername(ctx context.Context, db DBTX, username string) (*domain.User, error)
 	GetByUserId(ctx context.Context, db DBTX, userID string) (string, error)
+	RecordFightResult(ctx context.Context, db DBTX, userID string, victory bool) error
+	RecordCampaignComplete(ctx context.Context, db DBTX, userID string, campaignTemplateId string) error
 }
 
 type userRepo struct {
@@ -108,4 +110,31 @@ func (r *userRepo) GetByUserId(ctx context.Context, db DBTX, userID string) (str
 	}
 
 	return username.String, nil
+}
+
+func (r *userRepo) RecordFightResult(ctx context.Context, db DBTX, userID string, victory bool) error {
+	query := `
+		INSERT INTO user_analytics (user_id, fights, victories)
+		VALUES ($1, 1, CASE WHEN $2 THEN 1 ELSE 0 END)
+		ON CONFLICT (user_id)
+		DO UPDATE SET
+			fights = user_analytics.fights + 1,
+			victories = user_analytics.victories + CASE WHEN $2 THEN 1 ELSE 0 END;
+	`
+
+	_, err := db.ExecContext(ctx, query, userID, victory)
+	return err
+}
+
+func (r *userRepo) RecordCampaignComplete(ctx context.Context, db DBTX, userID string, campaignTemplateId string) error {
+
+	query := `
+		INSERT INTO user_campaign_completions (user_id, campaign_template_id)
+		VALUES ($1, $2)
+		ON CONFLICT (user_id, campaign_template_id)
+		DO NOTHING;
+	`
+
+	_, err := db.ExecContext(ctx, query, userID, campaignTemplateId)
+	return err
 }
