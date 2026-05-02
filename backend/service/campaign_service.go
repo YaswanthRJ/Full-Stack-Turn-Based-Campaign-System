@@ -788,7 +788,7 @@ func buildActorLog(
 			},
 			isDefensive: false,
 			skipped:     true,
-			aliveAfter:  true,
+			aliveAfter:  targetAliveAfter,
 		}
 	}
 
