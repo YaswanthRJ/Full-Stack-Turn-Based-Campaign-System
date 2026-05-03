@@ -70,7 +70,7 @@ func main() {
 	userHandler := handler.NewUserhandler(userService)
 	actionHandler := handler.NewActionHandler(actionService)
 	creatureHandler := handler.NewCreatureHandler(creatureService, imageService)
-	campaignHandler := handler.NewCampaignHandler(campaignService)
+	campaignHandler := handler.NewCampaignHandler(campaignService, imageService)
 	statsHandler := handler.NewStatshandler(statsService)
 
 	// router

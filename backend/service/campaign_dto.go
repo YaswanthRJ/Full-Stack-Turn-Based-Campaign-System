@@ -5,11 +5,13 @@ import "backend/domain"
 const NoAction = "NO_ACTION"
 
 type CreateCampaignTemplateInput struct {
-	Name        string
-	Description string
-	ImageUrl    string
-	OutroText   string
-	OutroImage  string
+	Name           string
+	Description    string
+	ImageUrl       string
+	ImagePublicKey string
+	OutroText      string
+	OutroImage     string
+	OutroPublicKey string
 }
 type AddCreaturesToCampaignInput struct {
 	CampaignID  string

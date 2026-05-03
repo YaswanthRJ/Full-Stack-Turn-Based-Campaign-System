@@ -65,7 +65,7 @@ func (s *campaignService) CreateCampaignTemplate(
 		return "", errors.New("invalid campaign description")
 	}
 
-	template := domain.NewCampaignTemplate(input.Name, input.Description, input.ImageUrl, input.OutroText, input.OutroImage)
+	template := domain.NewCampaignTemplate(input.Name, input.Description, input.ImageUrl, input.ImagePublicKey, input.OutroText, input.OutroImage, input.OutroPublicKey)
 
 	if err := s.repo.Create(ctx, s.db, template); err != nil {
 		return "", fmt.Errorf("create campaign template: %w", err)

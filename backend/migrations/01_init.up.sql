@@ -57,8 +57,10 @@ CREATE TABLE campaign_templates (
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     image_url TEXT,
+    image_public_key TEXT,
     outro_text TEXT,
     outro_image TEXT,
+    outro_public_key TEXT,
     status TEXT NOT NULL DEFAULT 'inactive'
 );
 

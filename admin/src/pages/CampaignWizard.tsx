@@ -5,9 +5,9 @@ import api from "../api/interceptor/axios";
 type CampaignDetails = {
   name: string;
   description: string;
-  imageUrl: string;
+  image: File | null;
   outroText: string;
-  outroImage: string;
+  outroImage: File | null;
   status: "inactive" | "active";
 };
 
@@ -23,7 +23,14 @@ type Creature = {
 
 const STORAGE_KEY = "campaign_wizard";
 
-const defaultDetails: CampaignDetails = { name: "", description: "", imageUrl: "", outroText: "", outroImage: "", status: "inactive" };
+const defaultDetails: CampaignDetails = {
+  name: "",
+  description: "",
+  image: null,
+  outroText: "",
+  outroImage: null,
+  status: "inactive",
+};
 
 function loadSaved() {
   try {
@@ -45,6 +52,7 @@ export function CampaignWizard() {
   const [allCreatures, setAllCreatures] = useState<Creature[]>([]);
   const [selectedCreatures, setSelectedCreatures] = useState<string[]>(saved?.selectedCreatures ?? []);
   const [stages, setStages] = useState<Stage[]>(saved?.stages ?? []);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Persist wizard state on every relevant change
   useEffect(() => {
@@ -76,18 +84,46 @@ export function CampaignWizard() {
   }
 
   async function handleDetailsNext() {
+    setIsLoading(true);
     try {
-      const res = await api.post<{ id: string }>("/campaigns", details);
+      const formData = new FormData();
+
+      formData.append("name", details.name);
+      formData.append("description", details.description);
+      formData.append("status", details.status);
+      formData.append("outroText", details.outroText);
+
+      if (details.image) {
+        formData.append("image", details.image);
+      }
+
+      if (details.outroImage) {
+        formData.append("outro_image", details.outroImage);
+      }
+
+      const res = await api.post<{ id: string }>(
+        "/campaigns",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
       setCampaignId(res.data.id);
       await fetchCreatures();
       setStep(1);
     } catch (error) {
       console.error("Failed to create campaign:", error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   async function handleCreaturesNext() {
     if (!campaignId) return;
+    setIsLoading(true);
     try {
       await api.post(`/campaigns/${campaignId}/creatures`, {
         creatureIds: selectedCreatures,
@@ -95,16 +131,21 @@ export function CampaignWizard() {
       setStep(2);
     } catch (error) {
       console.error("Failed to add creatures:", error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   async function handleStagesNext() {
     if (!campaignId) return;
+    setIsLoading(true);
     try {
       await api.post(`/campaigns/${campaignId}/stages`, { stages });
       clearAndNavigate();
     } catch (error) {
       console.error("Failed to add stages:", error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -122,6 +163,7 @@ export function CampaignWizard() {
           onChange={setDetails}
           onNext={handleDetailsNext}
           onCancel={clearAndNavigate}
+          isLoading={isLoading}
         />
       )}
 
@@ -132,6 +174,7 @@ export function CampaignWizard() {
           onChange={setSelectedCreatures}
           onBack={() => setStep(0)}
           onNext={handleCreaturesNext}
+          isLoading={isLoading}
         />
       )}
 
@@ -142,9 +185,9 @@ export function CampaignWizard() {
           onChange={setStages}
           onBack={() => setStep(1)}
           onNext={handleStagesNext}
+          isLoading={isLoading}
         />
       )}
-
     </div>
   );
 }
@@ -172,16 +215,43 @@ function Stepper({ current }: { current: number }) {
   );
 }
 
+function Spinner() {
+  return (
+    <svg
+      className="animate-spin h-4 w-4"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
+    </svg>
+  );
+}
+
 function CampaignDetailsStep({
   value,
   onChange,
   onNext,
   onCancel,
+  isLoading,
 }: {
   value: CampaignDetails;
   onChange: (v: CampaignDetails) => void;
   onNext: () => void;
   onCancel: () => void;
+  isLoading: boolean;
 }) {
   return (
     <div className="bg-white rounded-lg border border-purple-100 shadow-sm p-6 space-y-4">
@@ -200,12 +270,17 @@ function CampaignDetailsStep({
         onChange={(e) => onChange({ ...value, description: e.target.value })}
       />
 
-      <input
-        className="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
-        placeholder="Image URL"
-        value={value.imageUrl}
-        onChange={(e) => onChange({ ...value, imageUrl: e.target.value })}
-      />
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">Intro Image</label>
+        <input
+          type="file"
+          accept="image/*"
+          className="border border-gray-300 rounded p-2 w-full"
+          onChange={(e) =>
+            onChange({ ...value, image: e.target.files?.[0] ?? null })
+          }
+        />
+      </div>
 
       <textarea
         className="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
@@ -215,21 +290,23 @@ function CampaignDetailsStep({
         onChange={(e) => onChange({ ...value, outroText: e.target.value })}
       />
 
-      <input
-        className="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
-        placeholder="Outro Image URL"
-        value={value.outroImage}
-        onChange={(e) => onChange({ ...value, outroImage: e.target.value })}
-      />
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">Outro Image</label>
+        <input
+          type="file"
+          accept="image/*"
+          className="border border-gray-300 rounded p-2 w-full"
+          onChange={(e) =>
+            onChange({ ...value, outroImage: e.target.files?.[0] ?? null })
+          }
+        />
+      </div>
 
       <select
         className="border border-gray-300 rounded p-2 w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
         value={value.status}
         onChange={(e) =>
-          onChange({
-            ...value,
-            status: e.target.value as "inactive" | "active",
-          })
+          onChange({ ...value, status: e.target.value as "inactive" | "active" })
         }
       >
         <option value="inactive">Inactive</option>
@@ -239,16 +316,18 @@ function CampaignDetailsStep({
       <div className="flex gap-2 justify-end">
         <button
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+          disabled={isLoading}
+          className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Cancel
         </button>
         <button
           onClick={onNext}
-          disabled={!value.name.trim()}
-          className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={isLoading || !value.name.trim()}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Next
+          {isLoading && <Spinner />}
+          {isLoading ? "Creating…" : "Next"}
         </button>
       </div>
     </div>
@@ -261,12 +340,14 @@ function PlayableCreaturesStep({
   onChange,
   onBack,
   onNext,
+  isLoading,
 }: {
   creatures: Creature[];
   selected: string[];
   onChange: (ids: string[]) => void;
   onBack: () => void;
   onNext: () => void;
+  isLoading: boolean;
 }) {
   function toggle(id: string) {
     if (selected.includes(id)) {
@@ -306,15 +387,18 @@ function PlayableCreaturesStep({
       <div className="flex gap-2 justify-end">
         <button
           onClick={onBack}
-          className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+          disabled={isLoading}
+          className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Back
         </button>
         <button
           onClick={onNext}
-          className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+          disabled={isLoading}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Next
+          {isLoading && <Spinner />}
+          {isLoading ? "Saving…" : "Next"}
         </button>
       </div>
     </div>
@@ -327,12 +411,14 @@ function CampaignStagesStep({
   onChange,
   onBack,
   onNext,
+  isLoading,
 }: {
   creatures: Creature[];
   stages: Stage[];
   onChange: (s: Stage[]) => void;
   onBack: () => void;
   onNext: () => void;
+  isLoading: boolean;
 }) {
   function addStage() {
     onChange([...stages, { stageIndex: stages.length + 1, enemyCreatureId: "" }]);
@@ -382,7 +468,8 @@ function CampaignStagesStep({
 
             <button
               onClick={() => removeStage(i)}
-              className="text-red-500 hover:text-red-700 text-sm px-2"
+              disabled={isLoading}
+              className="text-red-500 hover:text-red-700 text-sm px-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Remove
             </button>
@@ -392,7 +479,8 @@ function CampaignStagesStep({
 
       <button
         onClick={addStage}
-        className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+        disabled={isLoading}
+        className="text-sm text-purple-600 hover:text-purple-800 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
       >
         + Add Stage
       </button>
@@ -400,15 +488,18 @@ function CampaignStagesStep({
       <div className="flex gap-2 justify-end">
         <button
           onClick={onBack}
-          className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+          disabled={isLoading}
+          className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Back
         </button>
         <button
           onClick={onNext}
-          className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+          disabled={isLoading}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Next
+          {isLoading && <Spinner />}
+          {isLoading ? "Saving…" : "Finish"}
         </button>
       </div>
     </div>

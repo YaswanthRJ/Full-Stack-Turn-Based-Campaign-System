@@ -7,13 +7,15 @@ import (
 )
 
 type CampaignTemplate struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	ImageUrl    string `json:"imageUrl"`
-	OutroText   string `json:"outroText"`
-	OutroImage  string `json:"outroImage"`
-	Status      string `json:"status"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	ImageUrl       string `json:"imageUrl"`
+	ImagePublicKey string `json:"imagePublicKey"`
+	OutroText      string `json:"outroText"`
+	OutroImage     string `json:"outroImage"`
+	OutroPublicKey string `json:"outroPublicKey"`
+	Status         string `json:"status"`
 }
 
 type CampaignStage struct {
@@ -115,15 +117,17 @@ func NewFight(input CreateFightInput) Fight {
 	}
 }
 
-func NewCampaignTemplate(name string, description string, imageUrl string, outroText string, outroImage string) CampaignTemplate {
+func NewCampaignTemplate(name string, description string, imageUrl string, imagePublicKey string, outroText string, outroImage string, outroPublicKey string) CampaignTemplate {
 	return CampaignTemplate{
-		ID:          uuid.New().String(),
-		Name:        name,
-		Description: description,
-		ImageUrl:    imageUrl,
-		OutroText:   outroText,
-		OutroImage:  outroImage,
-		Status:      "active",
+		ID:             uuid.New().String(),
+		Name:           name,
+		Description:    description,
+		ImageUrl:       imageUrl,
+		ImagePublicKey: imagePublicKey,
+		OutroText:      outroText,
+		OutroImage:     outroImage,
+		OutroPublicKey: outroPublicKey,
+		Status:         "active",
 	}
 }
 

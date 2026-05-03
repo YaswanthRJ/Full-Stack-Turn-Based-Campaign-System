@@ -44,8 +44,8 @@ func NewCampaignRepo() CampaignRepository {
 
 func (r *campaignRepo) Create(ctx context.Context, db DBTX, campaign domain.CampaignTemplate) error {
 	_, err := db.ExecContext(ctx,
-		"INSERT INTO campaign_templates (id,name,description, image_url, outro_text, outro_image,status) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-		campaign.ID, campaign.Name, campaign.Description, campaign.ImageUrl, campaign.OutroText, campaign.OutroImage, campaign.Status,
+		"INSERT INTO campaign_templates (id,name,description, image_url, image_public_key, outro_text, outro_image, outro_public_key, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+		campaign.ID, campaign.Name, campaign.Description, campaign.ImageUrl, campaign.ImagePublicKey, campaign.OutroText, campaign.OutroImage, campaign.OutroPublicKey, campaign.Status,
 	)
 	return err
 }

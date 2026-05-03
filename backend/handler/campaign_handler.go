@@ -1,21 +1,26 @@
 package handler
 
 import (
+	"backend/imageservice"
 	"backend/service"
 	"backend/utils"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/google/uuid"
 )
 
 type CampaignHandler struct {
-	service service.CampaignService
+	service      service.CampaignService
+	imageService imageservice.ImageService
 }
 
-func NewCampaignHandler(service service.CampaignService) *CampaignHandler {
-	return &CampaignHandler{service: service}
+func NewCampaignHandler(service service.CampaignService, imageService imageservice.ImageService) *CampaignHandler {
+	return &CampaignHandler{service: service, imageService: imageService}
 }
 
 func (h *CampaignHandler) CreateCampaignTemplate(w http.ResponseWriter, r *http.Request) {
@@ -23,24 +28,89 @@ func (h *CampaignHandler) CreateCampaignTemplate(w http.ResponseWriter, r *http.
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
 	ctx := r.Context()
-	var req CreateCampaignTemplateRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "invalid multipart form", http.StatusBadRequest)
 		return
 	}
-	input := service.CreateCampaignTemplateInput{
-		Name:        req.Name,
-		Description: req.Description,
-		ImageUrl:    req.ImageUrl,
-		OutroText:   req.OutroText,
-		OutroImage:  req.OutroImage,
+
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+	outroText := r.FormValue("outroText")
+
+	if name == "" || description == "" {
+		http.Error(w, "invalid input", http.StatusBadRequest)
+		return
 	}
+
+	// ---------- INTRO IMAGE ----------
+	introFile, _, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "intro image is required", http.StatusBadRequest)
+		return
+	}
+	defer introFile.Close()
+
+	introBytes, err := io.ReadAll(introFile)
+	if err != nil {
+		http.Error(w, "failed to read intro image", http.StatusInternalServerError)
+		return
+	}
+
+	introPublicID := fmt.Sprintf("campaigns/%s/intro", uuid.NewString())
+
+	introUploaded, err := h.imageService.UploadImageBytes(ctx, introBytes, introPublicID)
+	if err != nil {
+		http.Error(w, "intro upload failed", http.StatusInternalServerError)
+		return
+	}
+
+	// ---------- OUTRO IMAGE ----------
+	outroFile, _, err := r.FormFile("outro_image")
+	if err != nil {
+		_ = h.imageService.DeleteImage(ctx, introUploaded.PublicID)
+		http.Error(w, "outro image is required", http.StatusBadRequest)
+		return
+	}
+	defer outroFile.Close()
+
+	outroBytes, err := io.ReadAll(outroFile)
+	if err != nil {
+		_ = h.imageService.DeleteImage(ctx, introUploaded.PublicID)
+		http.Error(w, "failed to read outro image", http.StatusInternalServerError)
+		return
+	}
+
+	outroPublicID := fmt.Sprintf("campaigns/%s/outro", uuid.NewString())
+
+	outroUploaded, err := h.imageService.UploadImageBytes(ctx, outroBytes, outroPublicID)
+	if err != nil {
+		_ = h.imageService.DeleteImage(ctx, introUploaded.PublicID)
+		http.Error(w, "outro upload failed", http.StatusInternalServerError)
+		return
+	}
+
+	input := service.CreateCampaignTemplateInput{
+		Name:           name,
+		Description:    description,
+		ImageUrl:       introUploaded.SecureURL,
+		ImagePublicKey: introUploaded.PublicID,
+		OutroText:      outroText,
+		OutroImage:     outroUploaded.SecureURL,
+		OutroPublicKey: outroUploaded.PublicID,
+	}
+
 	id, err := h.service.CreateCampaignTemplate(ctx, input)
 	if err != nil {
+		_ = h.imageService.DeleteImage(ctx, introUploaded.PublicID)
+		_ = h.imageService.DeleteImage(ctx, outroUploaded.PublicID)
+
 		http.Error(w, "campaign creation failed", http.StatusInternalServerError)
 		return
 	}
+
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{
 		"id":      id,
 		"message": "campaign created successfully",
