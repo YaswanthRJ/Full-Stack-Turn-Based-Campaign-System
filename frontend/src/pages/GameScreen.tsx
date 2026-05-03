@@ -253,7 +253,7 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
             <motion.img
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              src={`/src/assets/${result.outro.outroImage}`}
+              src={result.outro.outroImage}
               className="rounded-xl border border-purple-700 w-full max-w-md object-cover"
             />
             <motion.p

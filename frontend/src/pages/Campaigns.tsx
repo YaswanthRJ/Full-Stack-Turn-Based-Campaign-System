@@ -73,7 +73,7 @@ function CampaignCard({ data, isActive }: CampaignCardProps) {
         {/* Image */}
         <div className="relative h-32 w-full overflow-hidden">
           <img
-            src={`/src/assets/${data.imageUrl}`}
+            src={data.imageUrl}
             alt={data.name}
             className="w-full h-full object-cover"
           />

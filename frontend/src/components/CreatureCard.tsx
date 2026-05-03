@@ -84,7 +84,7 @@ export function CreatureCard({
         >
           {imageUrl ? (
             <img
-              src={`src/assets/${imageUrl}`}
+              src={imageUrl}
               alt={name}
               className="w-full h-full object-cover"
               style={{ imageRendering: "pixelated" }}

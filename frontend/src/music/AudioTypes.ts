@@ -32,7 +32,7 @@ export const LOOP_KEYS: LoopType[] = ["home", "combat"];
 export const SFX_KEYS: SfxType[] = ["victory", "defeat", "campaignVictory"];
 
 /** Crossfade duration when switching between loops, or fading out via stopLoop(). */
-export const FADE_DURATION = 1000;
+export const FADE_DURATION = 700;
 
 /** How long a cold-start loop fades in from silence (no previous loop playing). */
 export const LOOP_FADE_IN = 1500;

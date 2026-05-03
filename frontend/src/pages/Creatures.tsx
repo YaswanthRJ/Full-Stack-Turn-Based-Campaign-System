@@ -53,7 +53,7 @@ function CreatureCard({ data, onSelect, isSelected }: CreatureCardProps) {
             }}
           >
             <img
-              src={`/src/assets/${data.imageUrl}`}
+              src={data.imageUrl}
               alt={data.name}
               className="w-full h-full object-cover"
             />

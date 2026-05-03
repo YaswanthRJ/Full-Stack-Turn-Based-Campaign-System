@@ -96,7 +96,7 @@ INSERT INTO campaign_templates (
  'active'),
 
 ('50000000-0000-0000-0000-000000000002',
- 'Recover Egg',
+ 'Avenge Egg',
  'You return to your lair to find your clutch of eggs shattered. Footprints lead toward a nearby human city.',
  'dragon_intro.jpg',
  'With the defenders vanquished, you reduce the city to ashes. You leave satisfied, knowing fewer humans will infest the world.',

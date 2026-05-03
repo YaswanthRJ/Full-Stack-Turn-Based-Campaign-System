@@ -421,7 +421,7 @@ function CampaignStagesStep({
   isLoading: boolean;
 }) {
   function addStage() {
-    onChange([...stages, { stageIndex: stages.length + 1, enemyCreatureId: "" }]);
+    onChange([...stages, { stageIndex: stages.length, enemyCreatureId: "" }]);
   }
 
   function updateStage(index: number, enemyCreatureId: string) {
@@ -436,7 +436,7 @@ function CampaignStagesStep({
     onChange(
       stages
         .filter((_, i) => i !== index)
-        .map((stage, i) => ({ ...stage, stageIndex: i + 1 }))
+        .map((stage, i) => ({ ...stage, stageIndex: i }))
     );
   }
 
