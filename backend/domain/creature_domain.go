@@ -3,11 +3,12 @@ package domain
 import "github.com/google/uuid"
 
 type Creature struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	ImageUrl    string `json:"imageUrl"`
-	IsPlayable  bool   `json:"isPlayable"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	ImageUrl      string `json:"imageUrl"`
+	ImagePublicID string `json:"imagePublicID"`
+	IsPlayable    bool   `json:"isPlayable"`
 }
 
 type CreatureStats struct {
@@ -21,25 +22,27 @@ type CreatureStats struct {
 }
 
 type CreatureDetails struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	ImageUrl    string `json:"imageUrl"`
-	IsPlayable  bool   `json:"isPlayable"`
-	MaxHP       int    `json:"maxHp"`
-	Attack      int    `json:"attack"`
-	Defence     int    `json:"defence"`
-	ActionPoint int    `json:"actionPoint"`
-	Speed       int    `json:"speed"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	ImageUrl      string `json:"imageUrl"`
+	ImagePublicID string `json:"imagePublicID"`
+	IsPlayable    bool   `json:"isPlayable"`
+	MaxHP         int    `json:"maxHp"`
+	Attack        int    `json:"attack"`
+	Defence       int    `json:"defence"`
+	ActionPoint   int    `json:"actionPoint"`
+	Speed         int    `json:"speed"`
 }
 
-func NewCreature(name string, description string, imageUrl string, isPlayable bool) Creature {
+func NewCreature(name string, description string, imageUrl string, imagePublicID string, isPlayable bool) Creature {
 	return Creature{
-		ID:          uuid.New().String(),
-		Name:        name,
-		Description: description,
-		ImageUrl:    imageUrl,
-		IsPlayable:  isPlayable,
+		ID:            uuid.New().String(),
+		Name:          name,
+		Description:   description,
+		ImageUrl:      imageUrl,
+		ImagePublicID: imagePublicID,
+		IsPlayable:    isPlayable,
 	}
 }
 

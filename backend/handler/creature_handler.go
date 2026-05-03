@@ -1,18 +1,26 @@
 package handler
 
 import (
+	"backend/imageservice"
 	"backend/service"
 	"backend/utils"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/google/uuid"
 )
 
 type CreatureHandler struct {
-	service service.CreatureService
+	service      service.CreatureService
+	imageService imageservice.ImageService
 }
 
-func NewCreatureHandler(service service.CreatureService) *CreatureHandler {
-	return &CreatureHandler{service: service}
+func NewCreatureHandler(service service.CreatureService, imageService imageservice.ImageService) *CreatureHandler {
+	return &CreatureHandler{service: service, imageService: imageService}
 }
 
 func (h *CreatureHandler) CreateCreatureWithStats(w http.ResponseWriter, r *http.Request) {
@@ -20,28 +28,103 @@ func (h *CreatureHandler) CreateCreatureWithStats(w http.ResponseWriter, r *http
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
 	ctx := r.Context()
-	var req CreatureRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "invalid multipart form", http.StatusBadRequest)
 		return
 	}
+
+	// Validate text fields first
+	name := strings.TrimSpace(r.FormValue("name"))
+	description := strings.TrimSpace(r.FormValue("description"))
+
+	if name == "" {
+		http.Error(w, "name is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate numeric fields BEFORE uploading image
+	maxHP, err := parseRequiredInt(r.FormValue("max_hp"), "max_hp")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	attack, err := parseRequiredInt(r.FormValue("attack"), "attack")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	defence, err := parseRequiredInt(r.FormValue("defence"), "defence")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	actionPoint, err := parseRequiredInt(r.FormValue("action_point"), "action_point")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	speed, err := parseRequiredInt(r.FormValue("speed"), "speed")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Only now process image upload
+	file, _, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "image is required", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	imageBytes, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "failed to read image", http.StatusInternalServerError)
+		return
+	}
+
+	requestedPublicID := fmt.Sprintf("creatures/%s", uuid.NewString())
+
+	uploaded, err := h.imageService.UploadImageBytes(ctx, imageBytes, requestedPublicID)
+	if err != nil {
+		http.Error(w, "image upload failed", http.StatusInternalServerError)
+		return
+	}
+
 	creature := service.CreateCreatureInput{
-		Name:        req.Name,
-		Description: req.Description,
-		ImageUrl:    req.ImageUrl,
-		IsPlayable:  req.IsPlayable,
-		MaxHP:       req.MaxHP,
-		Attack:      req.Attack,
-		Defence:     req.Defence,
-		ActionPoint: req.ActionPoint,
+		Name:          name,
+		Description:   description,
+		ImageUrl:      uploaded.SecureURL,
+		ImagePublicID: uploaded.PublicID,
+		IsPlayable:    r.FormValue("is_playable") == "true",
+		MaxHP:         maxHP,
+		Attack:        attack,
+		Defence:       defence,
+		ActionPoint:   actionPoint,
+		Speed:         speed,
 	}
+
 	if err := h.service.CreateCreatureWithStats(ctx, creature); err != nil {
-		http.Error(w, "Creature creation failed", http.StatusInternalServerError)
+		_ = h.imageService.DeleteImage(ctx, uploaded.PublicID)
+		fmt.Println(err)
+		http.Error(w, "creature creation failed", http.StatusInternalServerError)
 		return
 	}
-	utils.WriteJSON(w, http.StatusCreated, map[string]string{
+
+	utils.WriteJSON(w, http.StatusCreated, map[string]any{
 		"message": "Creature created successfully",
+		"creature": map[string]any{
+			"name":          creature.Name,
+			"imageUrl":      uploaded.SecureURL,
+			"imagePublicID": uploaded.PublicID,
+		},
 	})
 }
 
@@ -177,4 +260,12 @@ func (h *CreatureHandler) GetActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, creature)
+}
+
+func parseRequiredInt(val string, field string) (int, error) {
+	n, err := strconv.Atoi(strings.TrimSpace(val))
+	if err != nil {
+		return 0, fmt.Errorf("%s must be a valid integer", field)
+	}
+	return n, nil
 }

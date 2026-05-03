@@ -10,7 +10,7 @@ export interface Creature {
 export interface CreateCreaturePayload {
   name: string;
   description: string;
-  imageUrl: string;
+  image: File | null;
   is_playable: boolean;
   maxhp: number;
   attack: number;
@@ -30,6 +30,8 @@ export interface CreatureDetails {
   id: string;
   name: string;
   description: string;
+  imageUrl: string;
+  imagePublicId: string;
   isPlayable: boolean;
   maxHp: number;
   attack: number;
@@ -48,8 +50,29 @@ export const getCreatureById = async (id: string): Promise<CreatureDetails> => {
   return response.data;
 };
 
-export const createCreature = async (data: CreateCreaturePayload): Promise<void> => {
-  await api.post("/creatures", data);
+export const createCreature = async (
+  data: CreateCreaturePayload
+): Promise<void> => {
+  const formData = new FormData();
+
+  formData.append("name", data.name);
+  formData.append("description", data.description);
+  formData.append("is_playable", String(data.is_playable));
+  formData.append("max_hp", String(data.maxhp));
+  formData.append("attack", String(data.attack));
+  formData.append("defence", String(data.defence));
+  formData.append("action_point", String(data.action_point));
+  formData.append("speed", String(data.speed));
+
+  if (data.image) {
+    formData.append("image", data.image);
+  }
+
+  await api.post("/creatures", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 };
 
 export const updateCreatureStats = async (id: string, data: UpdateCreatureStatsPayload): Promise<void> => {

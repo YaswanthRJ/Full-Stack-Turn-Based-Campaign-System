@@ -3,6 +3,7 @@ package main
 import (
 	"backend/database"
 	"backend/handler"
+	"backend/imageservice"
 	"backend/repository"
 	"backend/service"
 	"backend/utils"
@@ -61,10 +62,14 @@ func main() {
 	engineService := service.NewEngineService()
 	campaignService := service.NewCampaignService(db, campaignRepo, creatureService, actionService, engineService, userService)
 	statsService := service.NewStatsService(userRepo, actionRepo, creatureRepo, campaignRepo, db)
+	imageService, err := imageservice.NewCloudinaryService()
+	if err != nil {
+		log.Fatalf("failed to initialize cloudinary: %v", err)
+	}
 
 	userHandler := handler.NewUserhandler(userService)
 	actionHandler := handler.NewActionHandler(actionService)
-	creatureHandler := handler.NewCreatureHandler(creatureService)
+	creatureHandler := handler.NewCreatureHandler(creatureService, imageService)
 	campaignHandler := handler.NewCampaignHandler(campaignService)
 	statsHandler := handler.NewStatshandler(statsService)
 

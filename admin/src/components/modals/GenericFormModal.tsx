@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 export type FieldConfig<T = any> = {
   key: keyof T;
   label: string;
-  type?: "text" | "number" | "textarea" | "select" | "checkbox";
+  type?: "text" | "number" | "textarea" | "select" | "checkbox" | "file";
   options?: { label: string; value: string }[];
 };
 
@@ -90,6 +90,18 @@ export function GenericFormModal<T extends Record<string, any>>({
                       }
                       rows={4}
                       className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+                    />
+                  ) : field.type === "file" ? (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) =>
+                        change(
+                          field.key,
+                          (e.target.files?.[0] ?? null) as T[typeof field.key]
+                        )
+                      }
+                      className="rounded-lg border border-gray-300 px-3 py-2"
                     />
                   ) : (
                     <input

@@ -24,7 +24,7 @@ type CreatureEditData = CreatureRequest & { id: string };
 const emptyForm: CreatureRequest = {
   name: "",
   description: "",
-  imageUrl: "",
+  image: null,
   isPlayable: false,
   maxhp: 0,
   attack: 0,
@@ -55,22 +55,24 @@ export function Creatures() {
     setOpenModal(true);
   };
 
-  const handleEdit = async (row: CreatureRow) => {
-    const details = await getCreatureById(row.id);
-    setEditData({
-      id: details.id,
-      name: details.name,
-      description: details.description,
-      imageUrl: details.imageUrl ?? "",
-      isPlayable: details.isPlayable,
-      maxhp: details.maxHp,
-      attack: details.attack,
-      defence: details.defence,
-      action_point: details.actionPoint,
-      speed: details.speed,
-    });
-    setOpenModal(true);
-  };
+ const handleEdit = async (row: CreatureRow) => {
+  const details = await getCreatureById(row.id);
+
+  setEditData({
+    id: details.id,
+    name: details.name,
+    description: details.description,
+    image: null,
+    isPlayable: details.isPlayable,
+    maxhp: details.maxHp,
+    attack: details.attack,
+    defence: details.defence,
+    action_point: details.actionPoint,
+    speed: details.speed,
+  });
+
+  setOpenModal(true);
+};
 
   const handleSave = async (form: CreatureRequest) => {
     if (editData) {
@@ -84,7 +86,7 @@ export function Creatures() {
       await createCreature({
         name: form.name,
         description: form.description,
-        imageUrl: form.imageUrl,
+        image: form.image,
         is_playable: form.isPlayable,
         maxhp: form.maxhp,
         attack: form.attack,

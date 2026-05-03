@@ -30,8 +30,8 @@ func NewCreatureRepo() CreatureRepository {
 
 func (r *creatureRepo) Create(ctx context.Context, db DBTX, creature domain.Creature) error {
 	_, err := db.ExecContext(ctx,
-		"INSERT INTO creatures (id,name,description, image_url, is_playable) VALUES ($1,$2,$3,$4,$5)",
-		creature.ID, creature.Name, creature.Description, creature.ImageUrl, creature.IsPlayable,
+		"INSERT INTO creatures (id,name,description, image_url, image_public_id, is_playable) VALUES ($1,$2,$3,$4,$5,$6)",
+		creature.ID, creature.Name, creature.Description, creature.ImageUrl, creature.ImagePublicID, creature.IsPlayable,
 	)
 	return err
 }

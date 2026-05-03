@@ -44,17 +44,37 @@ func (s *creatureService) CreateCreatureWithStats(ctx context.Context, creature 
 		}
 	}()
 
-	newcreature := domain.NewCreature(creature.Name, creature.Description, creature.ImageUrl, creature.IsPlayable)
-	newCreatureStats := domain.NewCreatureStats(newcreature.ID, creature.MaxHP, creature.Attack, creature.Defence, creature.ActionPoint, creature.Speed)
-	if err = s.repo.Create(ctx, tx, newcreature); err != nil {
+	newCreature := domain.NewCreature(
+		creature.Name,
+		creature.Description,
+		creature.ImageUrl,
+		creature.ImagePublicID,
+		creature.IsPlayable,
+	)
+
+	newCreatureStats := domain.NewCreatureStats(
+		newCreature.ID,
+		creature.MaxHP,
+		creature.Attack,
+		creature.Defence,
+		creature.ActionPoint,
+		creature.Speed,
+	)
+
+	if err = s.repo.Create(ctx, tx, newCreature); err != nil {
 		return fmt.Errorf("create creature: %w", err)
 	}
+
 	if err = s.repo.CreateStats(ctx, tx, newCreatureStats); err != nil {
 		return fmt.Errorf("create creature stats: %w", err)
 	}
+
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)
 	}
+
+	committed = true
+
 	return nil
 }
 

@@ -29,6 +29,7 @@ CREATE TABLE creatures (
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     image_url TEXT,
+    image_public_id TEXT,
     is_playable BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
