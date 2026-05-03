@@ -36,7 +36,7 @@ INSERT INTO creatures (
 ('30000000-0000-0000-0000-000000000001', 'Peasant', 'A human villager', 'creature.png', TRUE),
 ('30000000-0000-0000-0000-000000000002', 'Soldier', 'A trained human fighter', 'creature.png', TRUE),
 ('30000000-0000-0000-0000-000000000003', 'Wolf', 'A fast aggressive pack hunter', 'creature.png', FALSE),
-('30000000-0000-0000-0000-000000000004', 'Dragon', 'A legendary creature', 'dragon.png', TRUE);
+('30000000-0000-0000-0000-000000000004', 'Dragon', 'A legendary creature', 'https://res.cloudinary.com/dr9lh95nh/image/upload/v1777790238/creatures/e146fc4d-b36e-46e6-82bd-272e7c09d613.png', TRUE);
 
 
 -- =====================================================
@@ -98,9 +98,9 @@ INSERT INTO campaign_templates (
 ('50000000-0000-0000-0000-000000000002',
  'Avenge Egg',
  'You return to your lair to find your clutch of eggs shattered. Footprints lead toward a nearby human city.',
- 'dragon_intro.jpg',
+ 'https://res.cloudinary.com/dr9lh95nh/image/upload/v1777790363/campaigns/eac10441-76e7-48ff-b3d3-54319b31faf2/intro.jpg',
  'With the defenders vanquished, you reduce the city to ashes. You leave satisfied, knowing fewer humans will infest the world.',
- 'dragon_outro.jpg',
+ 'https://res.cloudinary.com/dr9lh95nh/image/upload/v1777790364/campaigns/fccd3981-d406-4f84-9c2d-1eb146ef0bec/outro.jpg',
  'active');
 
 -- =====================================================

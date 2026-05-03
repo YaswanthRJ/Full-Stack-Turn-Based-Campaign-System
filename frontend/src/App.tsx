@@ -48,12 +48,29 @@ function App() {
 
   if (!introSeen) {
     return (
-      <IntroScreen
-        onStart={() => {
-          sessionStorage.setItem("introSeen", "1");
-          setIntroSeen(true);
-        }}
-      />
+      <AuthProvider>
+        <GameProvider>
+          <AudioProvider>
+            <AudioUnlockGate>
+              {!introSeen ? (
+                <IntroScreen
+                  onStart={() => {
+                    sessionStorage.setItem("introSeen", "1");
+                    setIntroSeen(true);
+                  }}
+                />
+              ) : (
+                <Routes>
+                  <Route element={<Layout />}>
+                    <Route path="/" element={<Home />} />
+                    ...
+                  </Route>
+                </Routes>
+              )}
+            </AudioUnlockGate>
+          </AudioProvider>
+        </GameProvider>
+      </AuthProvider>
     );
   }
 

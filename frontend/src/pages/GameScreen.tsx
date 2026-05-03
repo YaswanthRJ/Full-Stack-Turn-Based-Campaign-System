@@ -229,7 +229,7 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
   if (result.campaignCompleted) {
     return (
       // h-full instead of min-h-screen — fits inside Layout's <main>
-      <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#06000f] to-[#0d001f]">
+      <div className="h-full flex flex-col items-center p-6 bg-linear-to-b from-[#06000f] to-[#0d001f]">
         <h2 className="text-purple-300 text-sm tracking-widest uppercase mb-4">
           Campaign Complete
         </h2>
@@ -262,7 +262,7 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
 
   return (
     <div
-      className="relative flex flex-col items-center justify-center h-full p-6 overflow-hidden"
+      className="relative flex flex-col items-center h-full p-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, #06000f 0%, #0d001f 100%)" }}
     >
       <AnimatePresence>
@@ -282,7 +282,7 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
           {won ? "⚔️" : "💀"}
         </div>
 
-        <h1 className="text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-400">
+        <h1 className="text-3xl font-black uppercase text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-fuchsia-400">
           {won ? "Victory!" : "Defeated"}
         </h1>
 

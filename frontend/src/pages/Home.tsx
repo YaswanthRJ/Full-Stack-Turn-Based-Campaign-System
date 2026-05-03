@@ -7,7 +7,7 @@ import { useGame } from "../context/GameProvider";
 import type { CurrentState } from "../types/campaign.types";
 
 import { useLoopScreen } from "../music";
-import purpleBg from "../assets/purplebg.jpg";
+import purpleBg from "../assets/castle.jpg";
 
 // ── Menu button ────────────────────────────────────────────────────────────
 interface MenuButtonProps {
