@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { getSession, startNextFight } from "../service/campaign.service";
@@ -6,141 +6,23 @@ import { getCreature, getCreatureActions } from "../service/creatures.service";
 import { useGame } from "../context/GameProvider";
 import type { CurrentState } from "../types/campaign.types";
 
-import logo from "../assets/logo.png"; // ✅ FIXED (correct way)
 import { useLoopScreen } from "../music";
-
-// ── Floating orb background ────────────────────────────────────────────────
-function FloatingOrbs() {
-  const orbs = [
-    { size: 180, x: "10%", y: "8%", color: "#7c3aed", delay: 0, duration: 7 },
-    { size: 120, x: "70%", y: "15%", color: "#a855f7", delay: 1.5, duration: 9 },
-    { size: 90, x: "55%", y: "55%", color: "#6d28d9", delay: 0.8, duration: 6 },
-    { size: 60, x: "20%", y: "65%", color: "#e879f9", delay: 2, duration: 8 },
-    { size: 40, x: "85%", y: "70%", color: "#818cf8", delay: 0.3, duration: 5 },
-  ];
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {orbs.map((orb, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            width: orb.size,
-            height: orb.size,
-            left: orb.x,
-            top: orb.y,
-            background: `radial-gradient(circle, ${orb.color}44 0%, transparent 70%)`,
-            filter: "blur(24px)",
-          }}
-          animate={{ y: [0, -24, 0], scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }}
-          transition={{
-            duration: orb.duration,
-            delay: orb.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ── Particle sparks ────────────────────────────────────────────────────────
-function Sparks() {
-  // ✅ FIXED: sparks are generated only once (not every render)
-  const sparks = useMemo(() => {
-    return Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      w: 2 + Math.random() * 2,
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
-      color: ["#a855f7", "#e879f9", "#818cf8", "#c084fc"][i % 4],
-      dur: 2 + Math.random() * 2,
-      delay: Math.random() * 4,
-    }));
-  }, []);
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {sparks.map((s) => (
-        <motion.div
-          key={s.id}
-          className="absolute rounded-full"
-          style={{
-            width: s.w,
-            height: s.w,
-            left: s.left,
-            top: s.top,
-            background: s.color,
-            boxShadow: `0 0 6px ${s.color}`,
-          }}
-          animate={{ opacity: [0, 1, 0], scale: [0, 1.5, 0] }}
-          transition={{
-            duration: s.dur,
-            delay: s.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ── Hero title ─────────────────────────────────────────────────────────────
-function HeroTitle() {
-  return (
-    <div className="relative flex flex-col items-center gap-4">
-      <div className="relative w-28 h-28 flex items-center justify-center">
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: "radial-gradient(circle, #1a0033 0%, #0d001f 80%, transparent 100%)",
-            border: "1px solid #7c3aed44",
-          }}
-        />
-
-        <img
-          src={logo} // ✅ FIXED
-          alt="Game Logo"
-          className="relative z-10 w-24 h-24 object-contain"
-          style={{ filter: "drop-shadow(0 0 20px #a855f7)" }}
-        />
-      </div>
-
-      <h1
-        className="font-black tracking-widest uppercase text-center leading-none"
-        style={{
-          fontSize: "2.2rem",
-          background: "linear-gradient(90deg, #c084fc 0%, #e879f9 40%, #818cf8 80%, #a855f7 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-          letterSpacing: "0.12em",
-        }}
-      >
-        FSTBCS
-      </h1>
-    </div>
-  );
-}
+import purpleBg from "../assets/purplebg.jpg";
 
 // ── Menu button ────────────────────────────────────────────────────────────
 interface MenuButtonProps {
   text: string;
   action: () => void;
   variant?: "primary" | "secondary" | "ghost";
-  icon?: string;
 }
 
-function MenuButton({ text, action, variant = "secondary", icon }: MenuButtonProps) {
+function MenuButton({ text, action, variant = "secondary" }: MenuButtonProps) {
   const styles = {
-   primary: {
-      background: "linear-gradient(135deg, #2e1065 0%, #4c1d95 100%)", // Darker, less flashy
-      border: "1px solid #a855f766", // Subtle border instead of bright
+    primary: {
+      background: "linear-gradient(135deg, #2e1065 0%, #4c1d95 100%)",
+      border: "1px solid #a855f766",
       color: "#e9d5ff",
-      boxShadow: "0 0 12px #7c3aed33", // Reduced shadow
+      boxShadow: "0 0 12px #7c3aed33",
     },
     secondary: {
       background: "linear-gradient(135deg, #0d0018 0%, #1e003a 100%)",
@@ -163,7 +45,7 @@ function MenuButton({ text, action, variant = "secondary", icon }: MenuButtonPro
       whileHover={{ scale: 1.03 }}
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.35 }} // ✅ added smooth transition
+      transition={{ duration: 0.35 }}
       className="relative w-full flex items-center justify-center gap-3 py-3.5 rounded-xl font-black text-sm tracking-widest uppercase overflow-hidden"
       style={styles[variant]}
     >
@@ -176,7 +58,6 @@ function MenuButton({ text, action, variant = "secondary", icon }: MenuButtonPro
         whileHover={{ x: "100%" }}
         transition={{ duration: 0.5 }}
       />
-      {icon && <span className="text-base">{icon}</span>}
       <span>{text}</span>
     </motion.button>
   );
@@ -184,7 +65,7 @@ function MenuButton({ text, action, variant = "secondary", icon }: MenuButtonPro
 
 // ── Home page ──────────────────────────────────────────────────────────────
 export function Home() {
-  useLoopScreen("home"); 
+  useLoopScreen("home");
   const [sessionState, setSessionState] = useState<CurrentState | null>(null);
   const { setState: setGameState } = useGame();
   const navigate = useNavigate();
@@ -197,10 +78,8 @@ export function Home() {
 
   async function handleContinue() {
     if (!sessionState?.currentSession) return;
-
     const session = sessionState.currentSession;
     let fight = sessionState.currentFight;
-
     if (!fight) fight = await startNextFight(session.id);
 
     const [player, enemy, actions] = await Promise.all([
@@ -223,30 +102,57 @@ export function Home() {
   }
 
   return (
-    <div
-      className="relative flex flex-col overflow-hidden"
-      style={{ height: "calc(100vh - 64px)" }}
+    <motion.div
+      className="relative flex flex-col h-full overflow-hidden"
+      style={{
+        backgroundImage: `url(${purpleBg})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      <FloatingOrbs />
-      <Sparks />
+      {/* Dark overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: "rgba(5, 0, 20, 0.45)" }}
+      />
 
-      <div className="relative flex flex-col items-center flex-1 px-6 pt-16 pb-10 gap-16">
-        <HeroTitle />
+      <div className="relative flex flex-col flex-1 px-6 pb-10">
+        <div className="flex-1" />
 
-        <div className="w-full max-w-xs flex flex-col gap-3 py-4">
+        <div className="w-full max-w-xs mx-auto flex flex-col gap-3 py-4 mb-20">
           {canContinue && (
-            <MenuButton text="Continue" action={handleContinue} variant="primary" />
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.4 }}
+            >
+              <MenuButton text="Continue" action={handleContinue} variant="primary" />
+            </motion.div>
           )}
-
-          <MenuButton
-            text="New Campaign"
-            action={() => navigate("/campaigns")}
-            variant="secondary"
-          />
-
-          <MenuButton text="Exit" action={() => console.log("exit game")} variant="ghost" />
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.4 }}
+          >
+            <MenuButton
+              text="New Campaign"
+              action={() => navigate("/campaigns")}
+              variant="secondary"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.4 }}
+          >
+            <MenuButton text="Exit" action={() => console.log("exit game")} variant="ghost" />
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

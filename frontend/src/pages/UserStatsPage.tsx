@@ -13,24 +13,18 @@ export function UserStatsPage() {
       setStats(res);
       setLoading(false);
     }
-
     loadStats();
   }, []);
 
   return (
-    <div
-      className="relative flex flex-col overflow-hidden"
-      style={{ height: "calc(100vh - 64px)" }}
-    >
-      {/* Background (simple, no heavy animation) */}
+    <div className="relative flex flex-col h-full overflow-hidden">
+      {/* Static ambient orbs — no animation, no layout cost */}
       <div className="absolute inset-0 pointer-events-none">
         <div
           className="absolute rounded-full"
           style={{
-            width: 220,
-            height: 220,
-            left: "15%",
-            top: "10%",
+            width: 220, height: 220,
+            left: "15%", top: "10%",
             background: "radial-gradient(circle, #7c3aed33 0%, transparent 70%)",
             filter: "blur(30px)",
           }}
@@ -38,23 +32,20 @@ export function UserStatsPage() {
         <div
           className="absolute rounded-full"
           style={{
-            width: 160,
-            height: 160,
-            left: "70%",
-            top: "55%",
+            width: 160, height: 160,
+            left: "70%", top: "55%",
             background: "radial-gradient(circle, #e879f933 0%, transparent 70%)",
             filter: "blur(30px)",
           }}
         />
       </div>
 
-      <div className="relative flex flex-col flex-1 px-6 pt-14 pb-10 gap-10 items-center">
+      <div className="relative flex flex-col flex-1 px-6 pt-10 pb-10 gap-10 items-center">
         <h1
           className="font-black tracking-widest uppercase text-center leading-none"
           style={{
             fontSize: "2rem",
-            background:
-              "linear-gradient(90deg, #c084fc 0%, #e879f9 40%, #818cf8 80%, #a855f7 100%)",
+            background: "linear-gradient(90deg, #c084fc 0%, #e879f9 40%, #818cf8 80%, #a855f7 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
@@ -77,13 +68,11 @@ export function UserStatsPage() {
               Loading...
             </p>
           )}
-
           {!loading && !stats && (
             <p className="text-center text-sm tracking-widest uppercase text-red-300">
               Failed to load stats
             </p>
           )}
-
           {!loading && stats && (
             <>
               <StatRow label="Completed Campaigns" value={stats.completedCampaigns} />

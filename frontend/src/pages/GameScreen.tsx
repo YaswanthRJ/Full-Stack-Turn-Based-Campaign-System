@@ -68,7 +68,6 @@ function Confetti() {
 }
 
 // ── FightPanel ─────────────────────────────────────────────────────────────
-// Isolated component — only knows about "fight" phase state
 
 type FightPanelProps = {
   state: Extract<GameState, { phase: "fight" }>;
@@ -78,7 +77,6 @@ type FightPanelProps = {
 function FightPanel({ state, onFightEnded }: FightPanelProps) {
   const { session, fight } = state;
 
-  // uiFight = animated display copy, server fight = source of truth
   const [uiFight, setUiFight] = useState<Fight>(fight);
   const [lines, setLines] = useState<RoundLogEntry[]>([]);
   const [eventAnim, setEventAnim] = useState<AnimEvent | null>(null);
@@ -105,8 +103,6 @@ function FightPanel({ state, onFightEnded }: FightPanelProps) {
   }
 
   function applyEffect(effect: string, serverFight: Fight) {
-    // uiFight is the ONLY place HP/AP animations happen
-    // serverFight is never mutated — only read for final values
     setUiFight((cur) => {
       const next = { ...cur };
       switch (effect) {
@@ -144,23 +140,13 @@ function FightPanel({ state, onFightEnded }: FightPanelProps) {
     const completed = res.campaignSessionCompleted;
 
     if (serverFight.status === "active") {
-      // Fight continues — sync uiFight to server and stay in fight phase
       setUiFight(serverFight);
       return;
     }
 
-    // Server explicitly ended the fight — build result and hand off
-    // Phase change is driven by server response, not by inferring fight.status
     const outcome = serverFight.status as ResultData["outcome"];
+    const result: ResultData = { fight: serverFight, outcome, campaignCompleted: completed, outro: null };
 
-    const result: ResultData = {
-      fight: serverFight,
-      outcome,
-      campaignCompleted: completed,
-      outro: null,
-    };
-
-    // Fetch outro in background if needed — parent will patch it in
     if (completed && serverFight.campaignSessionId) {
       getOutro(serverFight.campaignSessionId)
         .then((outro) => onFightEnded({ ...result, outro }))
@@ -171,6 +157,7 @@ function FightPanel({ state, onFightEnded }: FightPanelProps) {
   }
 
   return (
+    // h-full fills the <main> container cleanly
     <div className="flex flex-col h-full overflow-hidden" style={{ background: "#06000f" }}>
       <div
         className="flex flex-col gap-5 p-3 flex-1 overflow-auto"
@@ -217,7 +204,6 @@ function FightPanel({ state, onFightEnded }: FightPanelProps) {
 }
 
 // ── ResultPanel ────────────────────────────────────────────────────────────
-// Pure display — reads only from ResultData, no fight logic
 
 type ResultPanelProps = {
   state: Extract<GameState, { phase: "result" }>;
@@ -230,8 +216,6 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
   const { result } = state;
   const won = result.outcome === "player_won";
 
-  // Confetti is a pure display concern of ResultPanel
-  // It triggers once on mount when outcome is a normal win
   const [showConfetti, setShowConfetti] = useState(
     () => won && !result.campaignCompleted
   );
@@ -244,7 +228,8 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
 
   if (result.campaignCompleted) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-linear-to-b from-[#06000f] to-[#0d001f]">
+      // h-full instead of min-h-screen — fits inside Layout's <main>
+      <div className="h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#06000f] to-[#0d001f]">
         <h2 className="text-purple-300 text-sm tracking-widest uppercase mb-4">
           Campaign Complete
         </h2>
@@ -277,7 +262,7 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
 
   return (
     <div
-      className="relative flex flex-col items-center justify-center min-h-screen p-6 overflow-hidden"
+      className="relative flex flex-col items-center justify-center h-full p-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, #06000f 0%, #0d001f 100%)" }}
     >
       <AnimatePresence>
@@ -297,7 +282,7 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
           {won ? "⚔️" : "💀"}
         </div>
 
-        <h1 className="text-3xl font-black uppercase text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-fuchsia-400">
+        <h1 className="text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-400">
           {won ? "Victory!" : "Defeated"}
         </h1>
 
@@ -329,7 +314,6 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
 }
 
 // ── GameScreen ─────────────────────────────────────────────────────────────
-// Only job: own phase transitions. No fight logic, no display logic.
 
 export function GameScreen() {
   const { playSfx } = useAudio();
@@ -340,7 +324,6 @@ export function GameScreen() {
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // Called by FightPanel when server says fight is over
   function handleFightEnded(result: ResultData) {
     if (state.phase !== "fight") return;
     if (result.campaignCompleted && result.outcome === "player_won") {
@@ -350,11 +333,7 @@ export function GameScreen() {
     } else {
       playSfx("defeat");
     }
-    setState({
-      phase: "result",
-      session: state.session,
-      result,
-    });
+    setState({ phase: "result", session: state.session, result });
   }
 
   async function handleNextFight() {
@@ -364,12 +343,7 @@ export function GameScreen() {
     try {
       const nextFight = await startNextFight(state.session.sessionId);
       const nextEnemy = await getCreature(nextFight.enemyCreatureId);
-
-      setState({
-        phase: "fight",
-        session: { ...state.session, enemy: nextEnemy },
-        fight: nextFight,
-      });
+      setState({ phase: "fight", session: { ...state.session, enemy: nextEnemy }, fight: nextFight });
     } catch (err) {
       console.error("Next fight failed:", err);
     } finally {
@@ -381,8 +355,6 @@ export function GameScreen() {
     reset();
     navigate("/");
   }
-
-  // ── Render ───────────────────────────────────────────────────────────────
 
   switch (state.phase) {
     case "idle":

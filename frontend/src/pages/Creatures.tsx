@@ -5,7 +5,6 @@ import type { Creature } from "../types/creature.types";
 import { getCreatures } from "../service/creatures.service";
 import { useStartCampaign } from "../context/useStartCampaign";
 
-// ── Background ─────────────────────────────────────────────────────────────
 function BgLayer() {
   return (
     <div
@@ -17,7 +16,6 @@ function BgLayer() {
   );
 }
 
-// ── Creature card ──────────────────────────────────────────────────────────
 type CreatureCardProps = {
   data: Creature;
   onSelect: () => void;
@@ -38,38 +36,24 @@ function CreatureCard({ data, onSelect, isSelected }: CreatureCardProps) {
         className="relative overflow-hidden rounded-xl p-3"
         style={{
           background: isSelected
-            ? "linear-gradient(135deg, #12002a 0%, #1e003a 100%)"  // Just slightly lighter
+            ? "linear-gradient(135deg, #12002a 0%, #1e003a 100%)"
             : "linear-gradient(135deg, #0d0018 0%, #1a0030 100%)",
-          border: isSelected ? "1px solid #7c3aed88" : "1px solid #7c3aed33",  // Same color, more opaque
+          border: isSelected ? "1px solid #7c3aed88" : "1px solid #7c3aed33",
         }}
       >
         <div className="flex gap-3">
-          {/* Avatar */}
           <div
             className="shrink-0 w-14 h-14 rounded-lg overflow-hidden flex items-center justify-center"
-            style={{
-              background: "#1a0033",
-              border: "1px solid #7c3aed44",
-            }}
+            style={{ background: "#1a0033", border: "1px solid #7c3aed44" }}
           >
-            <img
-              src={data.imageUrl}
-              alt={data.name}
-              className="w-full h-full object-cover"
-            />
+            <img src={data.imageUrl} alt={data.name} className="w-full h-full object-cover" />
           </div>
-
-          {/* Info */}
           <div className="flex-1 min-w-0">
-            <h2 className="font-black text-base text-purple-200">
-              {data.name}
-            </h2>
+            <h2 className="font-black text-base text-purple-200">{data.name}</h2>
             <p className="text-[11px] text-purple-400/60 leading-relaxed mt-0.5">
               {data.description}
             </p>
           </div>
-
-          {/* Selection indicator */}
           {isSelected && (
             <div className="shrink-0">
               <span className="text-purple-500 text-lg">✓</span>
@@ -81,7 +65,6 @@ function CreatureCard({ data, onSelect, isSelected }: CreatureCardProps) {
   );
 }
 
-// ── Main Creatures ─────────────────────────────────────────────────────────
 export function Creatures() {
   const [creatures, setCreatures] = useState<Creature[] | null>(null);
   const [selectedCreatureId, setSelectedCreatureId] = useState<string | null>(null);
@@ -95,32 +78,29 @@ export function Creatures() {
 
   if (!creatures) {
     return (
-      <div
-        className="relative flex flex-col min-h-screen items-center justify-center"
+      <div className="flex flex-col h-full items-center justify-center gap-3"
         style={{ background: "linear-gradient(180deg, #06000f 0%, #0d001f 100%)" }}
       >
         <div className="w-8 h-8 rounded-full border-2 border-purple-600 border-t-transparent animate-spin" />
-        <span className="text-purple-400 font-mono text-xs mt-3">Loading creatures...</span>
+        <span className="text-purple-400 font-mono text-xs">Loading creatures...</span>
       </div>
     );
   }
 
   return (
     <div
-      className="relative flex flex-col min-h-screen"
+      className="relative flex flex-col h-full"
       style={{ background: "linear-gradient(180deg, #06000f 0%, #0d001f 100%)" }}
     >
       <BgLayer />
 
       <div className="relative flex flex-col px-5 pt-4 pb-6">
-        {/* Header */}
         <div className="flex flex-col items-center gap-1 mb-6">
           <h1 className="font-black text-xl tracking-widest uppercase text-purple-200">
             Choose Your Creature
           </h1>
         </div>
 
-        {/* Creature list */}
         <div className="flex flex-col gap-2 mb-8">
           {creatures.map((creature) => (
             <CreatureCard
@@ -132,7 +112,6 @@ export function Creatures() {
           ))}
         </div>
 
-        {/* Begin button - always visible */}
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -150,7 +129,7 @@ export function Creatures() {
           }}
           whileTap={{ scale: selectedCreatureId ? 0.97 : 1 }}
         >
-         Begin
+          Begin
         </motion.button>
       </div>
     </div>

@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import type { CampaignTemplate } from "../types/campaign.types";
 import { getCampaigns } from "../service/campaign.service";
 
-// ── Background ─────────────────────────────────────────────────────────────
 function BgLayer() {
   return (
     <div
@@ -15,7 +14,7 @@ function BgLayer() {
     />
   );
 }
-// ── Navigation Arrows ──────────────────────────────────────────────────────
+
 type ArrowProps = {
   direction: "left" | "right";
   onClick: () => void;
@@ -24,7 +23,6 @@ type ArrowProps = {
 
 function NavArrow({ direction, onClick, visible }: ArrowProps) {
   if (!visible) return null;
-
   return (
     <motion.button
       onClick={onClick}
@@ -43,7 +41,6 @@ function NavArrow({ direction, onClick, visible }: ArrowProps) {
   );
 }
 
-// ── Campaign Card ──────────────────────────────────────────────────────────
 type CampaignCardProps = {
   data: CampaignTemplate;
   isActive: boolean;
@@ -51,14 +48,10 @@ type CampaignCardProps = {
 
 function CampaignCard({ data, isActive }: CampaignCardProps) {
   const navigate = useNavigate();
-
   return (
     <motion.div
       className="w-full shrink-0 px-12"
-      animate={{ 
-        scale: isActive ? 1 : 0.92, 
-        opacity: isActive ? 1 : 0.5 
-      }}
+      animate={{ scale: isActive ? 1 : 0.92, opacity: isActive ? 1 : 0.5 }}
       transition={{ duration: 0.3 }}
     >
       <div
@@ -70,41 +63,22 @@ function CampaignCard({ data, isActive }: CampaignCardProps) {
         }}
         onClick={() => navigate(`/creatures/${data.id}`)}
       >
-        {/* Image */}
         <div className="relative h-32 w-full overflow-hidden">
-          <img
-            src={data.imageUrl}
-            alt={data.name}
-            className="w-full h-full object-cover"
-          />
-          
-          {/* Gradient overlay */}
+          <img src={data.imageUrl} alt={data.name} className="w-full h-full object-cover" />
           <div
             className="absolute inset-0"
-            style={{
-              background: "linear-gradient(180deg, transparent 40%, #0d001f 100%)",
-            }}
+            style={{ background: "linear-gradient(180deg, transparent 40%, #0d001f 100%)" }}
           />
         </div>
-
-        {/* Content */}
         <div className="p-3">
           <div className="flex items-baseline gap-2 mb-0.5">
-            <span className="text-[9px] font-mono text-purple-500 tracking-wider">
-              CAMPAIGN
-            </span>
+            <span className="text-[9px] font-mono text-purple-500 tracking-wider">CAMPAIGN</span>
             <div className="flex-1 h-px bg-purple-500/20" />
           </div>
-          
-          <h2 className="font-black text-base text-purple-100 mb-0.5">
-            {data.name}
-          </h2>
-          
+          <h2 className="font-black text-base text-purple-100 mb-0.5">{data.name}</h2>
           <p className="text-[11px] text-purple-400/60 leading-relaxed line-clamp-2">
             {data.description}
           </p>
-
-          {/* Subtle start hint */}
           <div className="mt-2 flex items-center gap-2 text-purple-400/40 text-[9px] font-mono">
             <span>Tap to begin</span>
             <span className="text-purple-500 text-[10px]">→</span>
@@ -115,14 +89,13 @@ function CampaignCard({ data, isActive }: CampaignCardProps) {
   );
 }
 
-// ── Dot Indicators ────────────────────────────────────────────────────────
 type DotProps = {
   total: number;
   current: number;
   onSelect: (index: number) => void;
 };
 
-function DotIndicators({ total, current, onSelect}: DotProps) {
+function DotIndicators({ total, current, onSelect }: DotProps) {
   return (
     <div className="flex flex-col items-center gap-2 mt-3">
       <div className="flex justify-center gap-1.5">
@@ -140,8 +113,6 @@ function DotIndicators({ total, current, onSelect}: DotProps) {
           />
         ))}
       </div>
-      
-      {/* Current campaign name */}
       <p className="text-purple-400/50 text-[10px] font-mono tracking-wider">
         {current + 1}/{total}
       </p>
@@ -149,7 +120,6 @@ function DotIndicators({ total, current, onSelect}: DotProps) {
   );
 }
 
-// ── Main Campaigns ─────────────────────────────────────────────────────────
 export function Campaigns() {
   const [campaigns, setCampaigns] = useState<CampaignTemplate[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -161,73 +131,51 @@ export function Campaigns() {
 
   const scrollToIndex = (index: number) => {
     if (scrollRef.current) {
-      const scrollAmount = index * scrollRef.current.clientWidth;
-      scrollRef.current.scrollTo({ left: scrollAmount, behavior: "smooth" });
+      scrollRef.current.scrollTo({
+        left: index * scrollRef.current.clientWidth,
+        behavior: "smooth",
+      });
     }
     setCurrentIndex(index);
   };
 
   const handleScroll = () => {
-    if (scrollRef.current) {
-      const index = Math.round(
-        scrollRef.current.scrollLeft / scrollRef.current.clientWidth
-      );
-      if (index !== currentIndex && !isNaN(index)) {
-        setCurrentIndex(index);
-      }
-    }
-  };
-
-  const goPrev = () => {
-    if (currentIndex > 0) {
-      scrollToIndex(currentIndex - 1);
-    }
-  };
-
-  const goNext = () => {
-    if (campaigns && currentIndex < campaigns.length - 1) {
-      scrollToIndex(currentIndex + 1);
-    }
+    if (!scrollRef.current) return;
+    const index = Math.round(
+      scrollRef.current.scrollLeft / scrollRef.current.clientWidth
+    );
+    if (index !== currentIndex && !isNaN(index)) setCurrentIndex(index);
   };
 
   if (!campaigns) {
     return (
-      <div
-        className="relative flex flex-col min-h-screen items-center justify-center"
+      <div className="flex flex-col h-full items-center justify-center gap-3"
         style={{ background: "linear-gradient(180deg, #06000f 0%, #0d001f 100%)" }}
       >
         <div className="w-8 h-8 rounded-full border-2 border-purple-600 border-t-transparent animate-spin" />
-        <span className="text-purple-400 font-mono text-xs mt-3">Loading campaigns...</span>
+        <span className="text-purple-400 font-mono text-xs">Loading campaigns...</span>
       </div>
     );
   }
 
   return (
     <div
-      className="relative flex flex-col h-screen overflow-hidden"
+      className="relative flex flex-col h-full overflow-hidden"
       style={{ background: "linear-gradient(180deg, #06000f 0%, #0d001f 100%)" }}
     >
       <BgLayer />
 
-      {/* Header - removed pt-6 to reduce top spacing */}
       <div className="relative flex flex-col items-center gap-1 pt-2 pb-2 shrink-0">
         <h1 className="font-black text-2xl tracking-widest uppercase text-purple-200">
           Campaigns
         </h1>
-        <p className="text-purple-400 text-[10px] font-mono tracking-wider">
-          SWIPE TO EXPLORE
-        </p>
+        <p className="text-purple-400 text-[10px] font-mono tracking-wider">SWIPE TO EXPLORE</p>
       </div>
 
-      {/* Carousel with outer arrows - removed flex-1, changed to auto height */}
       <div className="relative mt-10">
-        {/* Left Arrow */}
-        <NavArrow direction="left" onClick={goPrev} visible={currentIndex > 0} />
-        
-        {/* Right Arrow */}
-        <NavArrow direction="right" onClick={goNext} visible={campaigns && currentIndex < campaigns.length - 1} />
+        <NavArrow direction="left" onClick={() => scrollToIndex(currentIndex - 1)} visible={currentIndex > 0} />
+        <NavArrow direction="right" onClick={() => scrollToIndex(currentIndex + 1)} visible={currentIndex < campaigns.length - 1} />
 
-        {/* Scroll Container */}
         <div
           ref={scrollRef}
           className="relative overflow-x-auto snap-x snap-mandatory scroll-smooth"
@@ -248,14 +196,12 @@ export function Campaigns() {
         </div>
       </div>
 
-      {/* Dot indicators */}
       <DotIndicators
         total={campaigns.length}
         current={currentIndex}
         onSelect={scrollToIndex}
       />
 
-      {/* Bottom padding - reduced */}
       <div className="h-2 shrink-0" />
     </div>
   );
