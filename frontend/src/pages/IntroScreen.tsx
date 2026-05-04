@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState, useCallback } from "react";
-import logo from "../assets/logo.png";
+import logo from "../assets/calf.png";
 
 // ── Star field canvas ─────────────────────────────────────────────────────
 function StarField() {
@@ -102,15 +102,12 @@ function ShootingStars() {
 
       function step(now: number) {
         const p = Math.min((now - start) / dur, 1);
-        // head advances 0→1
         const headP = Math.min(p * 2, 1);
-        // tail follows with delay
         const tailP = Math.max(0, (p - 0.4) * (1 / 0.6));
         line.setAttribute("x1", String(x1 + Math.cos(angle) * len * tailP));
         line.setAttribute("y1", String(y1 + Math.sin(angle) * len * tailP));
         line.setAttribute("x2", String(x1 + Math.cos(angle) * len * headP));
         line.setAttribute("y2", String(y1 + Math.sin(angle) * len * headP));
-        // fade in then out
         const opacity = p < 0.5 ? p * 2 : (1 - p) * 2;
         line.setAttribute("stroke-opacity", String(opacity));
         if (p < 1) {
@@ -137,8 +134,6 @@ function ShootingStars() {
 }
 
 // ── Constellation ─────────────────────────────────────────────────────────
-// Natural-looking star pattern. A spark traces each edge on load,
-// then all lines and dots settle into a slow purple pulse.
 const CONSTELLATION_STARS: [number, number][] = [
   [0.08, 0.12],
   [0.16, 0.06],
@@ -149,7 +144,6 @@ const CONSTELLATION_STARS: [number, number][] = [
   [0.10, 0.23],
   [0.22, 0.18],
 ];
-// Edges as index pairs — forms a loose irregular polygon with an inner cross
 const CONSTELLATION_EDGES: [number, number][] = [
   [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 0],
   [1, 7], [3, 7], [5, 7],
@@ -168,7 +162,6 @@ function Constellation() {
     const px = (i: number) => CONSTELLATION_STARS[i][0] * W;
     const py = (i: number) => CONSTELLATION_STARS[i][1] * H;
 
-    // Build lines (invisible initially)
     const lines = CONSTELLATION_EDGES.map(([a, b]) => {
       const el = document.createElementNS(ns, "line");
       el.setAttribute("x1", String(px(a)));
@@ -182,7 +175,6 @@ function Constellation() {
       return el;
     });
 
-    // Build star dots (invisible initially)
     const dots = CONSTELLATION_STARS.map(([sx, sy]) => {
       const c = document.createElementNS(ns, "circle");
       c.setAttribute("cx", String(sx * W));
@@ -193,7 +185,6 @@ function Constellation() {
       return c;
     });
 
-    // Spark dot
     const spark = document.createElementNS(ns, "circle");
     spark.setAttribute("r", "2");
     spark.setAttribute("fill", "rgba(240,220,255,0)");
@@ -203,7 +194,6 @@ function Constellation() {
     let pulseRaf: number;
     let breathRaf: number;
 
-    // Animate a single edge: spark travels A→B, line fades in behind it
     function animateEdge(edgeIdx: number, onDone: () => void) {
       const [a, b] = CONSTELLATION_EDGES[edgeIdx];
       const ax = px(a), ay = py(a), bx = px(b), by = py(b);
@@ -211,11 +201,9 @@ function Constellation() {
       const start = performance.now();
       function step(now: number) {
         const p = Math.min((now - start) / dur, 1);
-        // Spark moves A→B
         spark.setAttribute("cx", String(ax + (bx - ax) * p));
         spark.setAttribute("cy", String(ay + (by - ay) * p));
         spark.setAttribute("fill", `rgba(240,220,255,${(Math.sin(p * Math.PI) * 0.85).toFixed(2)})`);
-        // Line fades in behind spark
         lines[edgeIdx].setAttribute("stroke", `rgba(180,120,255,${(p * 0.18).toFixed(3)})`);
         if (p < 1) requestAnimationFrame(step);
         else {
@@ -226,7 +214,6 @@ function Constellation() {
       requestAnimationFrame(step);
     }
 
-    // Chain all edges sequentially with a small gap
     function runEdges(i: number, onAllDone: () => void) {
       if (i >= CONSTELLATION_EDGES.length) { onAllDone(); return; }
       animateEdge(i, () => {
@@ -235,7 +222,6 @@ function Constellation() {
       });
     }
 
-    // Fade in dots one by one after edges
     function revealDots(i: number, onAllDone: () => void) {
       if (i >= dots.length) { onAllDone(); return; }
       const start = performance.now();
@@ -251,11 +237,9 @@ function Constellation() {
       requestAnimationFrame(fade);
     }
 
-    // Start the whole sequence after a short delay
     const t0 = setTimeout(() => {
       runEdges(0, () => {
         revealDots(0, () => {
-          // Pulse lines
           const ps = performance.now();
           function pulseLine(now: number) {
             const elapsed = (now - ps) / 1000;
@@ -265,7 +249,6 @@ function Constellation() {
           }
           requestAnimationFrame(pulseLine);
 
-          // Breathe dots
           const bs = performance.now();
           function breathe(now: number) {
             const elapsed = (now - bs) / 1000;
@@ -298,7 +281,6 @@ function Constellation() {
     />
   );
 }
-
 
 // ── Tap ripple ────────────────────────────────────────────────────────────
 interface Ripple {
@@ -351,6 +333,60 @@ function TapRipples({ ripples }: { ripples: Ripple[] }) {
         }
       `}</style>
     </div>
+  );
+}
+
+// ── Breathing tap prompt ──────────────────────────────────────────────────
+function TapPrompt() {
+  return (
+    <motion.div
+      className="flex flex-col items-center gap-2"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 1.8, duration: 1.2, ease: "easeOut" }}
+    >
+      {/* Chevron stack — bobs gently */}
+      <motion.div
+        className="flex flex-col items-center gap-0.5"
+        animate={{ y: [0, 5, 0] }}
+        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+      >
+        {[0, 1, 2].map((i) => (
+          <motion.svg
+            key={i}
+            width="14"
+            height="8"
+            viewBox="0 0 14 8"
+            fill="none"
+            animate={{ opacity: [0.15 + i * 0.25, 0.6 + i * 0.2, 0.15 + i * 0.25] }}
+            transition={{
+              duration: 2.2,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: i * 0.12,
+            }}
+          >
+            <polyline
+              points="1,1 7,7 13,1"
+              stroke="rgba(200,160,255,0.9)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </motion.svg>
+        ))}
+      </motion.div>
+
+      {/* Label */}
+      <motion.p
+        className="m-0 text-[10px] tracking-[0.32em] uppercase"
+        style={{ color: "rgba(200,160,255,0.45)", fontVariantCaps: "all-small-caps" }}
+        animate={{ opacity: [0.45, 0.75, 0.45] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      >
+        touch to begin
+      </motion.p>
+    </motion.div>
   );
 }
 
@@ -411,35 +447,57 @@ export function IntroScreen({ onStart }: { onStart: () => void }) {
       <div className="relative z-10 flex flex-col items-center gap-7">
         {/* Logo */}
         <motion.div
-          className="relative w-28 h-28 flex items-center justify-center"
+          className="relative w-36 h-36 flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
         >
+          {/* Outer glow — warm gold + hint of purple */}
           <motion.div
             className="absolute rounded-full will-change-transform"
             style={{
-              inset: "-12px",
-              background: "radial-gradient(circle, rgba(140,60,255,0.18) 0%, transparent 70%)",
-              filter: "blur(16px)",
+              inset: "-14px",
+              background: "radial-gradient(circle, rgba(140,60,255,0.20) 0%, transparent 60%), radial-gradient(circle, rgba(255,180,60,0.08) 45%, transparent 80%)"
+,
+              filter: "blur(14px)",
             }}
-            animate={{ scale: [1, 1.15, 1], opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            animate={{
+              scale: [1, 1.06, 1],
+              opacity: [0.45, 0.7, 0.45],
+            }}
+            transition={{
+              duration: 5.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
           />
+
+          {/* Gold medallion circle */}
           <div
             className="relative w-28 h-28 flex items-center justify-center rounded-full"
             style={{
-              background: "radial-gradient(circle, #1a0033 0%, #0d001f 100%)",
-              border: "1px solid rgba(124,58,237,0.22)",
+              background: "radial-gradient(circle, #1a0a2e 0%, #0d0618 100%)",
+              border: "1px solid rgba(255, 200, 80, 0.5)",
+              boxShadow: "0 0 0 1px rgba(255,160,30,0.08), inset 0 1px 0 rgba(255,220,100,0.10), 0 4px 24px rgba(0,0,0,0.7)",
             }}
           >
+            {/* Inner gold rim highlight */}
+            <div
+              className="absolute inset-0 rounded-full pointer-events-none"
+              style={{
+                background: "radial-gradient(ellipse at 40% 20%, rgba(180,100,255,0.18) 0%, transparent 60%)",
+              }}
+            />
             <img
               src={logo}
               alt="Game logo"
-              width={80}
-              height={80}
-              className="w-20 h-20 object-contain"
-              style={{ filter: "drop-shadow(0 0 10px #a855f755)" }}
+              width={160}
+              height={160}
+              className="w-20 h-20 object-contain relative z-10"
+              style={{
+                filter:
+                  "invert(1) sepia(1) saturate(3) hue-rotate(240deg) brightness(0.9) opacity(0.9) drop-shadow(0 0 8px rgba(180,100,255,0.5))",
+              }}
             />
           </div>
         </motion.div>
@@ -462,24 +520,8 @@ export function IntroScreen({ onStart }: { onStart: () => void }) {
           FSTBCS
         </motion.h1>
 
-        {/* Hint — pulses 3× then settles */}
-        <motion.p
-          className="text-xs tracking-[0.28em] uppercase text-purple-300/50 m-0"
-          style={{ height: "1.2em" }}
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: [0, 0.8, 0, 0.8, 0, 0.8, 0, 0.38],
-          }}
-          transition={{
-            duration: 3.6,
-            delay: 1.6,
-            times: [0, 0.1, 0.22, 0.32, 0.44, 0.54, 0.66, 1],
-            ease: "easeInOut",
-            repeat: 0,
-          }}
-        >
-          ◈ &nbsp; tap anywhere to enter &nbsp; ◈
-        </motion.p>
+        {/* Tap prompt */}
+        <TapPrompt />
       </div>
     </motion.div>
   );
