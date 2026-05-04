@@ -20,10 +20,22 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found")
+func loadEnv() {
+	env := os.Getenv("APP_ENV")
+	if env == "" {
+		env = "dev"
 	}
+
+	envFile := fmt.Sprintf(".env.%s", env) // .env.dev or .env.prod
+
+	if err := godotenv.Load(envFile); err != nil {
+		log.Printf("No %s file found, falling back to environment variables", envFile)
+	}
+}
+
+func main() {
+
+	loadEnv()
 
 	dsn := os.Getenv("DATABASE_URL")
 	port := os.Getenv("PORT")
