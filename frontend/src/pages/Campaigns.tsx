@@ -76,7 +76,7 @@ function CampaignCard({ data, isActive }: CampaignCardProps) {
             <div className="flex-1 h-px bg-purple-500/20" />
           </div>
           <h2 className="font-black text-base text-purple-100 mb-0.5">{data.name}</h2>
-          <p className="text-[11px] text-purple-400/60 leading-relaxed line-clamp-2">
+          <p className="text-[11px] text-purple-400/60 leading-relaxed">
             {data.description}
           </p>
           <div className="mt-2 flex items-center gap-2 text-purple-400/40 text-[9px] font-mono">

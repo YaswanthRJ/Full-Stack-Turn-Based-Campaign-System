@@ -67,6 +67,7 @@ function CreatureCard({ data, onSelect, isSelected }: CreatureCardProps) {
 
 export function Creatures() {
   const [creatures, setCreatures] = useState<Creature[] | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
   const [selectedCreatureId, setSelectedCreatureId] = useState<string | null>(null);
   const { campaignId } = useParams();
   const { begin } = useStartCampaign();
@@ -115,8 +116,17 @@ export function Creatures() {
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          onClick={() => selectedCreatureId && begin(campaignId, selectedCreatureId)}
-          disabled={!selectedCreatureId}
+          onClick={async () => {
+            if (!selectedCreatureId || isStarting) return;
+
+            setIsStarting(true);
+            try {
+              await begin(campaignId, selectedCreatureId);
+            } finally {
+              setIsStarting(false);
+            }
+          }}
+          disabled={!selectedCreatureId || isStarting}
           className="w-full py-3 rounded-xl font-black text-sm tracking-widest uppercase transition-all"
           style={{
             background: selectedCreatureId
@@ -129,7 +139,14 @@ export function Creatures() {
           }}
           whileTap={{ scale: selectedCreatureId ? 0.97 : 1 }}
         >
-          Begin
+          {isStarting ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-purple-300 border-t-transparent rounded-full animate-spin" />
+              <span>Starting...</span>
+            </div>
+          ) : (
+            "Begin"
+          )}
         </motion.button>
       </div>
     </div>

@@ -255,7 +255,6 @@ func (h *CreatureHandler) GetActions(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	creature, err := h.service.GetActions(ctx, creatureID)
-	fmt.Println(creature)
 	if err != nil {
 		http.Error(w, "action fetch failed", http.StatusInternalServerError)
 		return
