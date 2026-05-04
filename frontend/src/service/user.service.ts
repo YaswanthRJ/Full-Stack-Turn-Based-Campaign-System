@@ -1,5 +1,5 @@
 import type { AuthResponse, Credentials, UserStats } from "../types/user.types";
-import { get, post } from "./api";
+import { get, post, ApiError } from "./api";
 
 type User = {
   message: string;
@@ -10,6 +10,13 @@ type AuthCheckResult = {
   isAuthenticated: boolean;
   username: string | null;
 };
+
+export class StaleUserError extends Error {
+  constructor() {
+    super("Stale userId in localStorage");
+    this.name = "StaleUserError";
+  }
+}
 
 async function getUser(): Promise<User> {
   return await get("user");
@@ -29,17 +36,23 @@ export async function initUser(): Promise<InitUserResult> {
   const storedUserId = getUserFromLocalStorage();
 
   if (storedUserId) {
-    const auth = await checkAuthentication();
-
-    return {
-      userId: storedUserId,
-      isAuthenticated: auth.isAuthenticated,
-      username: auth.username,
-    };
+    try {
+      const auth = await checkAuthentication();
+      return {
+        userId: storedUserId,
+        isAuthenticated: auth.isAuthenticated,
+        username: auth.username,
+      };
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        localStorage.removeItem("userId");
+        throw new StaleUserError();
+      }
+      throw err;
+    }
   }
 
   const res = await getUser();
-
   localStorage.setItem("userId", res.user_id);
 
   return {
@@ -50,19 +63,7 @@ export async function initUser(): Promise<InitUserResult> {
 }
 
 async function checkAuthentication(): Promise<AuthCheckResult> {
-  try {
-    const user = await get<AuthCheckResult>(`user/auth`);
-
-    return {
-      isAuthenticated: user.isAuthenticated,
-      username: user.username,
-    };
-  } catch {
-    return {
-      isAuthenticated: false,
-      username: null,
-    };
-  }
+  return await get<AuthCheckResult>("user/auth");
 }
 
 export async function login(data: Credentials): Promise<AuthResponse | null> {

@@ -10,10 +10,17 @@ const jsonHeaders = {
   "Content-Type": "application/json",
 };
 
-async function apiRequest<T>(
-  url: string,
-  options: RequestInit
-): Promise<T> {
+export class ApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+async function apiRequest<T>(url: string, options: RequestInit): Promise<T> {
   const userId = getUserFromLocalStorage();
 
   const headers = {
@@ -44,15 +51,14 @@ async function apiRequest<T>(
         ? (data as any).message
         : "Request failed";
 
-    throw new Error(message);
+    throw new ApiError(res.status, message);
   }
 
   return data as T;
 }
+
 function get<T>(url: string): Promise<T> {
-  return apiRequest<T>(url, {
-    method: "GET",
-  });
+  return apiRequest<T>(url, { method: "GET" });
 }
 
 function post<T>(url: string, body: unknown): Promise<T> {
@@ -72,9 +78,7 @@ function put<T>(url: string, body: unknown): Promise<T> {
 }
 
 function del<T>(url: string): Promise<T> {
-  return apiRequest<T>(url, {
-    method: "DELETE",
-  });
+  return apiRequest<T>(url, { method: "DELETE" });
 }
 
 export { get, post, put, del };

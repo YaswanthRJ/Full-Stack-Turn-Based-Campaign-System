@@ -9,6 +9,7 @@ export function useStartCampaign() {
 
     async function begin(campaignId: any, creatureId: any) {
         try {
+             setState({ phase: "loading" });
             // start campaign → returns fight
             const res = await startCampaign(campaignId, creatureId);
 
@@ -26,14 +27,15 @@ export function useStartCampaign() {
 
             // update global state
             setState({
-                sessionId,
-                creatureId,
+                phase: "fight",
+                session: {
+                    sessionId,
+                    creatureId,
+                    player,
+                    enemy,
+                    actions,
+                },
                 fight,
-                actions,
-                player,
-                enemy,
-                loading: false,
-                campaignCompleted:false
             });
 
 
@@ -41,6 +43,7 @@ export function useStartCampaign() {
             navigate("/game");
         } catch (err) {
             console.error("Failed to start campaign:", err);
+            setState({ phase: "idle" });
             throw err;
         }
     }

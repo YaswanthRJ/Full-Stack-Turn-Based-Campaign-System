@@ -93,12 +93,6 @@ func (s *userService) CheckAuth(ctx context.Context, userID string) (*AuthCheckR
 	username, err := s.repo.GetByUserId(ctx, s.db, userID)
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return &AuthCheckResult{
-				IsAuthenticated: false,
-				Username:        nil,
-			}, nil
-		}
 		return nil, err
 	}
 

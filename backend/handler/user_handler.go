@@ -3,7 +3,9 @@ package handler
 import (
 	"backend/service"
 	"backend/utils"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
@@ -113,6 +115,10 @@ func (h *UserHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.service.CheckAuth(r.Context(), userID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "user not found", http.StatusNotFound)
+			return
+		}
 		http.Error(w, "auth check failed", http.StatusInternalServerError)
 		return
 	}

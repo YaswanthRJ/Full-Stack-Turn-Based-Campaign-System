@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect } from "react";
-import { initUser } from "../service/user.service";
+import { initUser, StaleUserError } from "../service/user.service";
 
 type AuthContextState = {
     isAuthenticated: boolean;
@@ -35,25 +35,32 @@ export function AuthProvider({
     }
 
     useEffect(() => {
-        async function bootstrap() {
+    async function bootstrap() {
+        try {
+            let result;
             try {
-                const result = await initUser();
-
-                setState({
-                    isAuthenticated: result.isAuthenticated,
-                    userId: result.userId,
-                    username: result.username,
-                });
+                result = await initUser();
             } catch (err) {
-                console.error("Failed to initialize user", err);
-                setError(true)
-            } finally {
-                setReady(true);
+                if (err instanceof StaleUserError) {
+                    result = await initUser();
+                } else {
+                    throw err;
+                }
             }
+            setState({
+                isAuthenticated: result.isAuthenticated,
+                userId: result.userId,
+                username: result.username,
+            });
+        } catch (err) {
+            console.error("Failed to initialize user", err);
+            setError(true);
+        } finally {
+            setReady(true);
         }
-
-        bootstrap();
-    }, []);
+    }
+    bootstrap();
+}, []);
 
     if (!ready) {
         return (
