@@ -234,22 +234,28 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
           Campaign Complete
         </h2>
         {result.outro && (
-          <>
-            <motion.img
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              src={result.outro.outroImage}
-              className="rounded-xl border border-purple-700 w-full max-w-md object-cover"
-            />
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center text-purple-200 mt-4 text-sm max-w-md"
-            >
-              {result.outro.outroText}
-            </motion.p>
-          </>
-        )}
+  <>
+    <motion.div
+      className="w-full max-w-md rounded-xl border border-purple-700 overflow-hidden"
+      style={{ aspectRatio: "16/9" }}  // ← reserves space before image loads
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+    >
+      <img
+        src={result.outro.outroImage}
+        alt=""
+        className="w-full h-full object-cover"
+      />
+    </motion.div>
+    <motion.p
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-center text-purple-200 mt-4 text-sm max-w-md"
+    >
+      {result.outro.outroText}
+    </motion.p>
+  </>
+)}
         <button
           onClick={onHome}
           className="mt-6 py-3 px-6 rounded-xl font-bold uppercase bg-black text-purple-300 border border-purple-700"

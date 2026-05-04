@@ -23,7 +23,7 @@ func NewActionRepo() ActionRepository {
 }
 
 func (r *actionRepo) Create(ctx context.Context, db DBTX, action domain.Action) error {
-	_, err := db.ExecContext(ctx, "INSERT INTO actions (id, name, description,icon_url, multiplier, type, tag, accuracy, action_weight) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", action.ID, action.Name, action.Description, action.IconUrl, action.Multiplier, action.Type, action.Tag, action.Accuracy, action.ActionWeight)
+	_, err := db.ExecContext(ctx, "INSERT INTO actions (id, name, description, multiplier, type, tag, accuracy, action_weight) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", action.ID, action.Name, action.Description, action.Multiplier, action.Type, action.Tag, action.Accuracy, action.ActionWeight)
 	if err != nil {
 		return fmt.Errorf("actionRepo.Create %w", err)
 	}
@@ -42,7 +42,7 @@ func (r *actionRepo) Update(ctx context.Context, db DBTX, action domain.Action) 
 	    accuracy = $8, 
 	    action_weight = $9 
 	WHERE id = $1`,
-		action.ID, action.Name, action.Description, action.IconUrl, action.Multiplier,
+		action.ID, action.Name, action.Description, action.Multiplier,
 		action.Type, action.Tag, action.Accuracy, action.ActionWeight,
 	)
 	if err != nil {
@@ -63,7 +63,7 @@ func (r *actionRepo) Update(ctx context.Context, db DBTX, action domain.Action) 
 func (r *actionRepo) GetAllActions(ctx context.Context, db DBTX) ([]domain.Action, error) {
 	var actions []domain.Action
 
-	query := `SELECT id, name, description, icon_url, type, multiplier, tag, accuracy, action_weight FROM actions`
+	query := `SELECT id, name, description, type, multiplier, tag, accuracy, action_weight FROM actions`
 
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
@@ -78,7 +78,6 @@ func (r *actionRepo) GetAllActions(ctx context.Context, db DBTX) ([]domain.Actio
 			&a.ID,
 			&a.Name,
 			&a.Description,
-			&a.IconUrl,
 			&a.Type,
 			&a.Multiplier,
 			&a.Tag,
@@ -101,12 +100,11 @@ func (r *actionRepo) GetAllActions(ctx context.Context, db DBTX) ([]domain.Actio
 func (r *actionRepo) GetActionDetails(ctx context.Context, db DBTX, actionID string) (domain.Action, error) {
 	var action domain.Action
 
-	err := db.QueryRowContext(ctx, `SELECT id, name, description, icon_url, multiplier, type, tag, accuracy, action_weight FROM actions WHERE id = $1`,
+	err := db.QueryRowContext(ctx, `SELECT id, name, description, multiplier, type, tag, accuracy, action_weight FROM actions WHERE id = $1`,
 		actionID).Scan(
 		&action.ID,
 		&action.Name,
 		&action.Description,
-		&action.IconUrl,
 		&action.Multiplier,
 		&action.Type,
 		&action.Tag,

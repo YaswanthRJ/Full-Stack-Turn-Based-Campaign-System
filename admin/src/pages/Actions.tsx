@@ -40,9 +40,9 @@ export function Actions() {
   const [deleteRow, setDeleteRow] = useState<ActionRow | null>(null);
 
   const loadData = async () => {
-    const data = await getActions();
-    setActionsData(data);
-  };
+  const data = await getActions();
+  setActionsData(data ?? []);
+};
 
   useEffect(() => {
     loadData();

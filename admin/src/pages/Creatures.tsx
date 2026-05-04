@@ -42,9 +42,9 @@ export function Creatures() {
   const [assignRow, setAssignRow] = useState<CreatureRow | null>(null);
 
   const loadData = async () => {
-    const data = await getCreatures();
-    setCreaturesData(data);
-  };
+  const data = await getCreatures();
+  setCreaturesData(data ?? []);
+};
 
   useEffect(() => {
     loadData();

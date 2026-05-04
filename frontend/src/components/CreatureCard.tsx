@@ -56,9 +56,8 @@ export function CreatureCard({
       initial={{ opacity: 0, x: isEnemy ? 40 : -40 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className={`relative flex ${
-        isEnemy ? "flex-row-reverse" : "flex-row"
-      } items-center gap-4 px-4 py-3 rounded-2xl`}
+      className={`relative flex ${isEnemy ? "flex-row-reverse" : "flex-row"
+        } items-center gap-4 px-4 py-3 rounded-2xl`}
       style={{
         background: isEnemy
           ? "linear-gradient(135deg, #0b0015 0%, #0a102a 60%, #070018 100%)"
@@ -87,7 +86,10 @@ export function CreatureCard({
               src={imageUrl}
               alt={name}
               className="w-full h-full object-cover"
-              style={{ imageRendering: "pixelated" }}
+              style={{
+                imageRendering: "auto",
+                transform: "translateZ(0)",
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -146,9 +148,8 @@ export function CreatureCard({
 
       {/* Info */}
       <div
-        className={`flex-1 flex flex-col gap-2 min-w-0 ${
-          isEnemy ? "items-end" : "items-start"
-        }`}
+        className={`flex-1 flex flex-col gap-2 min-w-0 ${isEnemy ? "items-end" : "items-start"
+          }`}
       >
         <span className="text-white font-black text-sm tracking-wide truncate uppercase">
           {name}

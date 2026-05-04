@@ -215,7 +215,7 @@ func (r *creatureRepo) ValidateAction(ctx context.Context, db DBTX, creatureID s
 }
 func (r *creatureRepo) GetActions(ctx context.Context, db DBTX, creatureID string) ([]domain.Action, error) {
 	query := `
-		SELECT a.id, a.name, a.type, a.accuracy, a.multiplier, a.action_weight
+		SELECT a.id, a.name, a.type,a.description, a.accuracy, a.multiplier, a.action_weight
 		FROM actions a
 		JOIN creature_actions ca ON ca.action_id = a.id
 		WHERE ca.creature_id = $1
@@ -236,6 +236,7 @@ func (r *creatureRepo) GetActions(ctx context.Context, db DBTX, creatureID strin
 			&a.ID,
 			&a.Name,
 			&a.Type,
+			&a.Description,
 			&a.Accuracy,
 			&a.Multiplier,
 			&a.ActionWeight,

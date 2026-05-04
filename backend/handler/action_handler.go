@@ -4,6 +4,7 @@ import (
 	"backend/service"
 	"backend/utils"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -37,6 +38,7 @@ func (h *ActionHandler) CreateAction(w http.ResponseWriter, r *http.Request) {
 		ActionWeight: req.ActionWeight,
 	}
 	if _, err := h.service.CreateAction(ctx, action); err != nil {
+		fmt.Println(err)
 		http.Error(w, "Action creation failed", http.StatusInternalServerError)
 		return
 	}
