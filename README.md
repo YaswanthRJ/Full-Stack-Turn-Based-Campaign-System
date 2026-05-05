@@ -339,7 +339,7 @@ DELETE /campaigns/{id}/stages/{idx}        # Delete stage
 GET    /stats                        # Get platform statistics (users, actions, creatures, campaigns count)
 ```
 
-**Authentication**: Include `X-User-ID` header for game endpoints. Admin endpoints have no authentication requirement.
+**Authentication**: Include `X-User-ID` header for game endpoints.
 
 ---
 
