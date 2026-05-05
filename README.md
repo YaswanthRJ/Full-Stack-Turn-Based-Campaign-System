@@ -676,28 +676,6 @@ npm run build
 # Serve dist/ folder with static host
 ```
 
-### Docker (Optional)
-
-Create `Dockerfile` for backend and `docker-compose.yml` for orchestration (not currently included).
-
----
-
-## Testing
-
-Currently no test files are configured. To add tests:
-
-**Backend**:
-```bash
-# In backend/
-go test ./...
-```
-
-**Frontend/Admin**:
-```bash
-# In frontend/ or admin/
-npm test
-```
-
 ---
 
 ## Troubleshooting
