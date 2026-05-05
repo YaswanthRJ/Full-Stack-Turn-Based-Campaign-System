@@ -64,8 +64,8 @@ export function AuthProvider({
 
     if (!ready) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-black text-white">
-                “Waking backend server… Free-tier hosting may cause a short delay.”
+            <div className="min-h-screen flex items-center justify-center bg-black text-white px-2">
+                Waking backend server… Free-tier hosting may cause a short delay.
             </div>
         );
     }
