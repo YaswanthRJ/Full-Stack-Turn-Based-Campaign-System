@@ -32,3 +32,24 @@ type StartCampaignRequest struct {
 type ResolveRoundRequest struct {
 	ActionID string `json:"actionId"`
 }
+
+type UpdateFullCampaignRequest struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	ImageUrl    string                 `json:"imageUrl"`
+	OutroText   string                 `json:"outroText"`
+	OutroImage  string                 `json:"outroImage"`
+	CreatureIDs []string               `json:"creatureIds"`
+	Stages      []CampaignStageRequest `json:"stages"`
+}
+
+type CreateFullCampaignRequest struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	ImageUrl    string                 `json:"imageUrl"`
+	OutroText   string                 `json:"outroText"`
+	OutroImage  string                 `json:"outroImage"`
+	CreatureIDs []string               `json:"creatureIds"`
+	Stages      []CampaignStageRequest `json:"stages"`
+}

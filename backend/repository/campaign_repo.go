@@ -33,6 +33,7 @@ type CampaignRepository interface {
 	AbandonActiveSessions(ctx context.Context, db DBTX, userID string) error
 	GetCreatures(ctx context.Context, db DBTX, campaignID string) ([]domain.Creature, error)
 	GetOutroBySessionID(ctx context.Context, db DBTX, sessionID string) (*domain.CampaignOutroData, error)
+	UpdateFullCampaign(ctx context.Context, db DBTX, campaign domain.Campaign) error
 }
 
 type campaignRepo struct {
@@ -735,4 +736,66 @@ func (r *campaignRepo) GetOutroBySessionID(ctx context.Context, db DBTX, session
 	}
 
 	return &outro, nil
+}
+
+// UpdateFullCampaign updates the full campaign including template, stages, and playable creatures.
+func (r *campaignRepo) UpdateFullCampaign(ctx context.Context, db DBTX, campaign domain.Campaign) error {
+	// Update campaign template
+	_, err := db.ExecContext(ctx,
+		"UPDATE campaign_templates SET name = $2, description = $3, outro_text = $4, status = $5 WHERE id = $1",
+		campaign.Template.ID, campaign.Template.Name, campaign.Template.Description, campaign.Template.OutroText, campaign.Template.Status,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update campaign template: %w", err)
+	}
+
+	// Delete all existing stages
+	_, err = db.ExecContext(ctx,
+		"DELETE FROM campaign_stages WHERE campaign_template_id = $1",
+		campaign.Template.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete existing stages: %w", err)
+	}
+
+	// Reinsert new stages
+	query := `INSERT INTO campaign_stages (campaign_template_id, stage_index, enemy_creature_id) VALUES `
+	values := []interface{}{}
+	for i, stage := range campaign.Stages {
+		if i > 0 {
+			query += ", "
+		}
+		query += fmt.Sprintf("($%d, $%d, $%d)", i*3+1, i*3+2, i*3+3)
+		values = append(values, campaign.Template.ID, stage.StageIndex, stage.EnemyCreatureID)
+	}
+	_, err = db.ExecContext(ctx, query, values...)
+	if err != nil {
+		return fmt.Errorf("failed to insert new stages: %w", err)
+	}
+
+	// Delete all existing playable creatures
+	_, err = db.ExecContext(ctx,
+		"DELETE FROM campaign_playable_creatures WHERE campaign_template_id = $1",
+		campaign.Template.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete existing playable creatures: %w", err)
+	}
+
+	// Reinsert new playable creatures
+	query = `INSERT INTO campaign_playable_creatures (campaign_template_id, creature_id) VALUES `
+	values = []interface{}{}
+	for i, creatureID := range campaign.PlayableCreatureIDs {
+		if i > 0 {
+			query += ", "
+		}
+		query += fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2)
+		values = append(values, campaign.Template.ID, creatureID)
+	}
+	_, err = db.ExecContext(ctx, query, values...)
+	if err != nil {
+		return fmt.Errorf("failed to insert new playable creatures: %w", err)
+	}
+
+	return nil
 }

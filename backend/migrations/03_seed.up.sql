@@ -121,7 +121,7 @@ INSERT INTO campaign_templates (
  'Too many of your pack have fallen to the bandits lurking in the woods. You decide enough is enough',
  'https://res.cloudinary.com/dr9lh95nh/image/upload/v1777876608/campaigns/dbbd12ec-0dd7-432f-aed3-83a790bb1a43/intro.jpg',
  'campaigns/dbbd12ec-0dd7-432f-aed3-83a790bb1a43/intro',
- 'The bandits are wiped out, their lair wiped out.',
+ 'The bandits are wiped out, their lair destroyed.',
  'https://res.cloudinary.com/dr9lh95nh/image/upload/v1777876609/campaigns/87588f7e-58c2-4d94-be00-6294084d4131/outro.jpg',
  'campaigns/87588f7e-58c2-4d94-be00-6294084d4131/outro',
  'active'),

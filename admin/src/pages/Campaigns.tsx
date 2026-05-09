@@ -50,6 +50,11 @@ export function Campaigns() {
 
   const actions = [
     {
+      label: "Edit",
+      onClick: (row: CampaignRow) =>
+        navigate(`/campaigns/${row.id}/edit`),
+    },
+    {
       label: "Delete",
       onClick: (row: CampaignRow) => setDeleteRow(row),
       variant: "danger" as const,

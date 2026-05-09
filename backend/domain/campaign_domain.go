@@ -24,9 +24,9 @@ type CampaignStage struct {
 }
 
 type Campaign struct {
-	Template            CampaignTemplate
-	PlayableCreatureIDs []string
-	Stages              []CampaignStage
+	Template            CampaignTemplate `json:"template"`
+	PlayableCreatureIDs []string         `json:"playableCreatureIds"`
+	Stages              []CampaignStage  `json:"stages"`
 }
 
 type CampaignSession struct {

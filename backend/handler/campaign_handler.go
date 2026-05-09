@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"backend/domain"
 	"backend/imageservice"
 	"backend/service"
 	"backend/utils"
@@ -502,4 +503,184 @@ func (h *CampaignHandler) GetCampaignOutro(w http.ResponseWriter, r *http.Reques
 	}
 
 	utils.WriteJSON(w, http.StatusOK, outro)
+}
+
+func (h *CampaignHandler) UpdateFullCampaign(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+
+	var req UpdateFullCampaignRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	campaignTemplate := domain.CampaignTemplate{
+		ID:          req.ID,
+		Name:        req.Name,
+		Description: req.Description,
+		ImageUrl:    req.ImageUrl,
+		OutroText:   req.OutroText,
+		OutroImage:  req.OutroImage,
+	}
+	playableCreatures := req.CreatureIDs
+	stages := []domain.CampaignStage{}
+	for _, s := range req.Stages {
+		stages = append(stages, domain.CampaignStage{
+			StageIndex:      s.StageIndex,
+			EnemyCreatureID: s.EnemyCreatureID,
+		})
+	}
+	campaign := domain.Campaign{
+		Template:            campaignTemplate,
+		PlayableCreatureIDs: playableCreatures,
+		Stages:              stages,
+	}
+
+	if err := h.service.UpdateFullCampaign(ctx, campaign); err != nil {
+		log.Printf("UpdateFullCampaign failed: %v", err)
+		http.Error(w, "campaign update failed", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"message": "campaign updated successfully",
+	})
+}
+
+func (h *CampaignHandler) CreateFullCampaign(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+	outroText := r.FormValue("outroText")
+
+	if name == "" || description == "" {
+		http.Error(w, "name and description are required", http.StatusBadRequest)
+		return
+	}
+
+	// ---------- CREATURE IDS ----------
+	var creatureIDs []string
+	if err := json.Unmarshal(
+		[]byte(r.FormValue("creatureIds")),
+		&creatureIDs,
+	); err != nil {
+		http.Error(w, "invalid creatureIds", http.StatusBadRequest)
+		return
+	}
+
+	// ---------- STAGES ----------
+	var stageReqs []CampaignStageRequest
+	if err := json.Unmarshal(
+		[]byte(r.FormValue("stages")),
+		&stageReqs,
+	); err != nil {
+		http.Error(w, "invalid stages", http.StatusBadRequest)
+		return
+	}
+
+	stages := make([]service.CampaignStageInput, len(stageReqs))
+	for i, s := range stageReqs {
+		stages[i] = service.CampaignStageInput{
+			StageIndex:      s.StageIndex,
+			EnemyCreatureID: s.EnemyCreatureID,
+		}
+	}
+
+	// ---------- INTRO IMAGE ----------
+	introFile, _, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "intro image is required", http.StatusBadRequest)
+		return
+	}
+	defer introFile.Close()
+
+	introBytes, err := io.ReadAll(introFile)
+	if err != nil {
+		http.Error(w, "failed to read intro image", http.StatusInternalServerError)
+		return
+	}
+
+	introPublicID := fmt.Sprintf("campaigns/%s/intro", uuid.NewString())
+
+	introUploaded, err := h.imageService.UploadImageBytes(
+		ctx,
+		introBytes,
+		introPublicID,
+	)
+	if err != nil {
+		http.Error(w, "intro upload failed", http.StatusInternalServerError)
+		return
+	}
+
+	// ---------- OUTRO IMAGE ----------
+	outroFile, _, err := r.FormFile("outro_image")
+	if err != nil {
+		_ = h.imageService.DeleteImage(ctx, introUploaded.PublicID)
+
+		http.Error(w, "outro image is required", http.StatusBadRequest)
+		return
+	}
+	defer outroFile.Close()
+
+	outroBytes, err := io.ReadAll(outroFile)
+	if err != nil {
+		_ = h.imageService.DeleteImage(ctx, introUploaded.PublicID)
+
+		http.Error(w, "failed to read outro image", http.StatusInternalServerError)
+		return
+	}
+
+	outroPublicID := fmt.Sprintf("campaigns/%s/outro", uuid.NewString())
+
+	outroUploaded, err := h.imageService.UploadImageBytes(
+		ctx,
+		outroBytes,
+		outroPublicID,
+	)
+	if err != nil {
+		_ = h.imageService.DeleteImage(ctx, introUploaded.PublicID)
+
+		http.Error(w, "outro upload failed", http.StatusInternalServerError)
+		return
+	}
+
+	// ---------- CREATE ----------
+	id, err := h.service.CreateFullCampaign(
+		ctx,
+		service.CreateFullCampaignInput{
+			Name:        name,
+			Description: description,
+			ImageUrl:    introUploaded.SecureURL,
+			OutroText:   outroText,
+			OutroImage:  outroUploaded.SecureURL,
+			CreatureIDs: creatureIDs,
+			Stages:      stages,
+		},
+	)
+
+	if err != nil {
+		log.Printf("CreateFullCampaign failed: %v", err)
+
+		_ = h.imageService.DeleteImage(ctx, introUploaded.PublicID)
+		_ = h.imageService.DeleteImage(ctx, outroUploaded.PublicID)
+
+		http.Error(w, "campaign creation failed", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, map[string]string{
+		"id":      id,
+		"message": "campaign created successfully",
+	})
 }

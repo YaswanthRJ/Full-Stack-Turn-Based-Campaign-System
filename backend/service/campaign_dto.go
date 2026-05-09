@@ -80,3 +80,13 @@ const (
 	EffectPlayerDefeated = "player_defeated"
 	EffectEnemyDefeated  = "enemy_defeated"
 )
+
+type CreateFullCampaignInput struct {
+	Name        string
+	Description string
+	ImageUrl    string
+	OutroText   string
+	OutroImage  string
+	CreatureIDs []string
+	Stages      []CampaignStageInput
+}

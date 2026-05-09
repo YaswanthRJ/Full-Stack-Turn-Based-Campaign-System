@@ -148,6 +148,8 @@ func registerAdminRoutes(
 
 	// campaign routes
 	mux.HandleFunc("POST /campaigns", campaignHandler.CreateCampaignTemplate)
+	mux.HandleFunc("POST /campaigns/full", campaignHandler.CreateFullCampaign)
+	mux.HandleFunc("PUT /campaigns/full", campaignHandler.UpdateFullCampaign)
 	mux.HandleFunc("DELETE /campaigns/{id}", campaignHandler.DeleteCampaign)
 
 	mux.HandleFunc("POST /campaigns/{id}/creatures", campaignHandler.AddCreaturesToCampaign)

@@ -24,6 +24,8 @@ type CampaignService interface {
 	GetActiveUserSession(ctx context.Context, userID string) (*UserSessionResult, error)
 	GetCreatures(ctx context.Context, campaignID string) ([]domain.Creature, error)
 	GetCampaignOutro(ctx context.Context, userID string, sessionID string) (*domain.CampaignOutroData, error)
+	UpdateFullCampaign(ctx context.Context, campaign domain.Campaign) error
+	CreateFullCampaign(ctx context.Context, input CreateFullCampaignInput) (string, error)
 }
 
 type campaignService struct {
@@ -51,6 +53,53 @@ func NewCampaignService(
 		engineService:   engineService,
 		userService:     userService,
 	}
+}
+
+func (s *campaignService) CreateFullCampaign(ctx context.Context, input CreateFullCampaignInput) (string, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	template := domain.NewCampaignTemplate(
+		input.Name, input.Description,
+		input.ImageUrl, "",
+		input.OutroText, input.OutroImage, "",
+	)
+
+	if err = s.repo.Create(ctx, tx, template); err != nil {
+		return "", fmt.Errorf("create campaign template: %w", err)
+	}
+
+	if len(input.CreatureIDs) > 0 {
+		if err = s.repo.AddCreaturesToCampaign(ctx, tx, template.ID, input.CreatureIDs); err != nil {
+			return "", fmt.Errorf("add creatures: %w", err)
+		}
+	}
+
+	if len(input.Stages) > 0 {
+		stages := make([]domain.CampaignStage, len(input.Stages))
+		for i, st := range input.Stages {
+			stages[i] = domain.CampaignStage{
+				StageIndex:      st.StageIndex,
+				EnemyCreatureID: st.EnemyCreatureID,
+			}
+		}
+		if err = s.repo.AddStagesToCampaign(ctx, tx, template.ID, stages); err != nil {
+			return "", fmt.Errorf("add stages: %w", err)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return "", fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return template.ID, nil
 }
 
 func (s *campaignService) CreateCampaignTemplate(
@@ -173,6 +222,30 @@ func (s *campaignService) DeleteStage(ctx context.Context, campaignID string, st
 	if err := s.repo.DeleteStage(ctx, s.db, campaignID, stageIndex); err != nil {
 		return fmt.Errorf("delete stage: %w", err)
 	}
+	return nil
+}
+
+func (s *campaignService) UpdateFullCampaign(ctx context.Context, campaign domain.Campaign) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// Update the full campaign including template, stages, and playable creatures
+	if err := s.repo.UpdateFullCampaign(ctx, tx, campaign); err != nil {
+		return fmt.Errorf("update full campaign: %w", err)
+	}
+
+	// If everything is successful, commit the transaction
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
+	}
+
 	return nil
 }
 
