@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { Creature } from "../types/creature.types";
 import { getCreatures } from "../service/creatures.service";
 import { useStartCampaign } from "../context/useStartCampaign";
+import { CloudinaryImage } from "../components/CloudinaryImage";
 
 function BgLayer() {
   return (
@@ -46,7 +47,7 @@ function CreatureCard({ data, onSelect, isSelected }: CreatureCardProps) {
             className="shrink-0 w-14 h-14 rounded-lg overflow-hidden flex items-center justify-center"
             style={{ background: "#1a0033", border: "1px solid #7c3aed44" }}
           >
-            <img src={data.imageUrl} alt={data.name} className="w-full h-full object-cover" />
+            <CloudinaryImage src={data.imageUrl} alt={data.name} width={240} />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="font-black text-base text-purple-200">{data.name}</h2>

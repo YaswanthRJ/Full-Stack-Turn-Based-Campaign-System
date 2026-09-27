@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import type { CampaignTemplate } from "../types/campaign.types";
 import { getCampaigns } from "../service/campaign.service";
+import { CloudinaryImage } from "../components/CloudinaryImage";
 
 function BgLayer() {
   return (
@@ -64,7 +65,7 @@ function CampaignCard({ data, isActive }: CampaignCardProps) {
         onClick={() => navigate(`/creatures/${data.id}`)}
       >
         <div className="relative h-32 w-full overflow-hidden">
-          <img src={data.imageUrl} alt={data.name} className="w-full h-full object-cover" />
+          <CloudinaryImage src={data.imageUrl} alt={data.name} width={640} />
           <div
             className="absolute inset-0"
             style={{ background: "linear-gradient(180deg, transparent 40%, #0d001f 100%)" }}

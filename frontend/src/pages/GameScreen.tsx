@@ -5,6 +5,7 @@ import { useGame } from "../context/GameProvider";
 import type { GameState, ResultData } from "../context/GameProvider";
 import { useGameInitializer } from "../context/useGameInitializer";
 import { CreatureCard } from "../components/CreatureCard";
+import { CloudinaryImage } from "../components/CloudinaryImage";
 import { ActionsPanel } from "../components/ActionPanel";
 import { LogBox } from "../components/LogBox";
 import {
@@ -241,10 +242,11 @@ function ResultPanel({ state, onNextFight, onHome, isNavigating }: ResultPanelPr
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
     >
-      <img
+      <CloudinaryImage
         src={result.outro.outroImage}
         alt=""
-        className="w-full h-full object-cover"
+        width={960}
+        loading="eager"
       />
     </motion.div>
     <motion.p

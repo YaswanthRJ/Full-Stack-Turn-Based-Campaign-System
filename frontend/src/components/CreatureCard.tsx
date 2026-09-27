@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { StatBar } from "./StatBar";
+import { CloudinaryImage } from "./CloudinaryImage";
 
 type AnimEvent =
   | "player_move"
@@ -82,14 +83,11 @@ export function CreatureCard({
           transition={{ duration: 0.2 }}
         >
           {imageUrl ? (
-            <img
+            <CloudinaryImage
               src={imageUrl}
               alt={name}
-              className="w-full h-full object-cover"
-              style={{
-                imageRendering: "auto",
-                transform: "translateZ(0)",
-              }}
+              width={320}
+              loading="eager"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
